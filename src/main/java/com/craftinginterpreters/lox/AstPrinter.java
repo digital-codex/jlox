@@ -16,6 +16,16 @@ class AstPrinter implements Expr.Visitor<String> {
     }
 
     @Override
+    public String visitCallExpr(Expr.Call expr) {
+        String callee = expr.callee.accept(this);
+        Expr[] arguments = new Expr[expr.arguments.size()];
+        for (int i = 0; i < expr.arguments.size(); ++i) {
+            arguments[i] = expr.arguments.get(i);
+        }
+        return this.parenthesize(callee, arguments);
+    }
+
+    @Override
     public String visitGroupingExpr(Expr.Grouping expr) {
         return this.parenthesize("group", expr.expression);
     }
