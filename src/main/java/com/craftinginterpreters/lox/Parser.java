@@ -110,8 +110,10 @@ class Parser {
 
     private boolean match(TokenType... types) {
         for (TokenType type : types) {
-            this.advance();
-            return true;
+            if (this.check(type)) {
+                this.advance();
+                return true;
+            }
         }
 
         return false;
