@@ -1,6 +1,7 @@
 package com.craftinginterpreters.lox;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 class Parser {
@@ -53,11 +54,75 @@ class Parser {
     }
 
     private Stmt statement() {
+        if (this.match(TokenType.FOR)) return this.forStatement();
+        if (this.match(TokenType.IF)) return this.ifStatement();
         if (this.match(TokenType.PRINT)) return this.printStatement();
+        if (this.match(TokenType.WHILE)) return this.whileStatement();
         if (this.match(TokenType.LEFT_BRACE))
             return new Stmt.Block(this.block());
 
         return this.expressionStatement();
+    }
+
+    private Stmt forStatement() {
+        this.consume(TokenType.LEFT_PAREN, "Expect '(' after 'for'.");
+
+        Stmt initializer;
+        if (this.match(TokenType.SEMICOLON)) {
+            initializer = null;
+        } else if (this.match(TokenType.VAR)) {
+            initializer = this.varDeclaration();
+        } else {
+            initializer = this.expressionStatement();
+        }
+
+        Expr condition = null;
+        if (!this.check(TokenType.SEMICOLON)) {
+            condition = this.expression();
+        }
+        this.consume(
+                TokenType.SEMICOLON, "Expect ';' after loop condition."
+        );
+
+        Expr increment = null;
+        if (!this.check(TokenType.RIGHT_PAREN)) {
+            increment = this.expression();
+        }
+        this.consume(
+                TokenType.RIGHT_PAREN, "Expect ')' after for clauses."
+        );
+        Stmt body = this.statement();
+
+        if (increment != null) {
+            body = new Stmt.Block(
+                    Arrays.asList(body, new Stmt.Expression(increment))
+            );
+        }
+
+        if (condition == null) condition = new Expr.Literal(true);
+        body = new Stmt.While(condition, body);
+
+        if (initializer != null) {
+            body = new Stmt.Block(Arrays.asList(initializer, body));
+        }
+
+        return body;
+    }
+
+    private Stmt ifStatement() {
+        this.consume(TokenType.LEFT_PAREN, "Expect '(' after 'if'.");
+        Expr condition = this.expression();
+        this.consume(
+                TokenType.RIGHT_PAREN, "Expect ')' after if condition."
+        );
+
+        Stmt thenBranch = this.statement();
+        Stmt elseBranch = null;
+        if (this.match(TokenType.ELSE)) {
+            elseBranch = this.statement();
+        }
+
+        return new Stmt.If(condition, thenBranch, elseBranch);
     }
 
     private Stmt printStatement() {
@@ -83,6 +148,19 @@ class Parser {
         return new Stmt.Var(name, initializer);
     }
 
+    private Stmt whileStatement() {
+        this.consume(
+                TokenType.LEFT_PAREN, "Expect '(' after 'while'."
+        );
+        Expr condition = this.expression();
+        this.consume(
+                TokenType.RIGHT_PAREN, "Expect ')' after condition."
+        );
+        Stmt body = this.statement();
+
+        return new Stmt.While(condition, body);
+    }
+
     private Stmt expressionStatement() {
         Expr expr = this.expression();
         this.consume(
@@ -103,7 +181,10 @@ class Parser {
     }
 
     private Expr assignment() {
+/* Logical Operators 9.3
         Expr expr = this.equality();
+*/
+        Expr expr = this.or();
 
         if (this.match(TokenType.EQUAL)) {
             Token equals = this.previous();
@@ -115,6 +196,30 @@ class Parser {
             }
 
             this.error(equals, "Invalid assignment target.");
+        }
+
+        return expr;
+    }
+
+    private Expr or() {
+        Expr expr = this.and();
+
+        while (this.match(TokenType.OR)) {
+            Token operator = this.previous();
+            Expr right = this.and();
+            expr = new Expr.Logical(expr, operator, right);
+        }
+
+        return expr;
+    }
+
+    private Expr and() {
+        Expr expr = this.equality();
+
+        while (this.match(TokenType.AND)) {
+            Token operator = this.previous();
+            Expr right = this.equality();
+            expr = new Expr.Logical(expr, operator, right);
         }
 
         return expr;
