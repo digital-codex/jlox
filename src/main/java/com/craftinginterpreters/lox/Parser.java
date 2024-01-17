@@ -1,5 +1,6 @@
 package com.craftinginterpreters.lox;
 
+import java.util.ArrayList;
 import java.util.List;
 
 class Parser {
@@ -12,6 +13,7 @@ class Parser {
         this.tokens = tokens;
     }
 
+/* Parsing staements
     Expr parse() {
         try {
             return this.expression();
@@ -19,9 +21,103 @@ class Parser {
             return null;
         }
     }
+*/
+    List<Stmt> parse() {
+        List<Stmt> statements = new ArrayList<>();
+        while (!this.isAtEnd()) {
+/* Parsing variables 8.2.2
+            statements.add(this.statement());
+*/
+            statements.add(this.declaration());
+        }
+
+        return statements;
+    }
 
     private Expr expression() {
+/* Assignment syntax
         return this.equality();
+*/
+        return this.assignment();
+    }
+
+    private Stmt declaration() {
+        try {
+            if (this.match(TokenType.VAR)) return this.varDeclaration();
+
+            return this.statement();
+        } catch (ParseError error) {
+            this.synchronize();
+            return null;
+        }
+    }
+
+    private Stmt statement() {
+        if (this.match(TokenType.PRINT)) return this.printStatement();
+        if (this.match(TokenType.LEFT_BRACE))
+            return new Stmt.Block(this.block());
+
+        return this.expressionStatement();
+    }
+
+    private Stmt printStatement() {
+        Expr value = this.expression();
+        this.consume(TokenType.SEMICOLON, "Expect ';' after value.");
+        return new Stmt.Print(value);
+    }
+
+    private Stmt varDeclaration() {
+        Token name = this.consume(
+                TokenType.IDENTIFIER, "Expect variable name."
+        );
+
+        Expr initializer = null;
+        if (this.match(TokenType.EQUAL)) {
+            initializer = this.expression();
+        }
+
+        this.consume(
+                TokenType.SEMICOLON,
+                "Expect ';' after variable declaration."
+        );
+        return new Stmt.Var(name, initializer);
+    }
+
+    private Stmt expressionStatement() {
+        Expr expr = this.expression();
+        this.consume(
+                TokenType.SEMICOLON, "Expect ';' after expression."
+        );
+        return new Stmt.Expression(expr);
+    }
+
+    private List<Stmt> block() {
+        List<Stmt> statements = new ArrayList<>();
+
+        while (!this.check(TokenType.RIGHT_BRACE) && !this.isAtEnd()) {
+            statements.add(this.declaration());
+        }
+
+        this.consume(TokenType.RIGHT_BRACE, "Expect '}' after block.");
+        return statements;
+    }
+
+    private Expr assignment() {
+        Expr expr = this.equality();
+
+        if (this.match(TokenType.EQUAL)) {
+            Token equals = this.previous();
+            Expr value = this.assignment();
+
+            if (expr instanceof Expr.Variable) {
+                Token name = ((Expr.Variable) expr).name;
+                return new Expr.Assign(name, value);
+            }
+
+            this.error(equals, "Invalid assignment target.");
+        }
+
+        return expr;
     }
 
     private Expr equality() {
@@ -94,6 +190,10 @@ class Parser {
 
         if (this.match(TokenType.NUMBER, TokenType.STRING)) {
             return new Expr.Literal(this.previous().literal);
+        }
+
+        if (this.match(TokenType.IDENTIFIER)) {
+            return new Expr.Variable(this.previous());
         }
 
         if (match(TokenType.LEFT_PAREN)) {

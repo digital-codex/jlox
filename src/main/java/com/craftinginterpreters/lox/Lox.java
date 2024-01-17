@@ -57,7 +57,10 @@ public class Lox {
         }
 */
         Parser parser = new Parser(tokens);
+/* Executing statements 8.1.3
         Expr expression = parser.parse();
+*/
+        List<Stmt> statements = parser.parse();
 
         // Stop if there was a syntax error.
         if (Lox.hadError) return;
@@ -65,7 +68,10 @@ public class Lox {
 /* Running the interpreter 7.4.2
         System.out.println(new AstPrinter().print(expression));
 */
+/* Executing statements 8.1.3
         Lox.interpreter.interpret(expression);
+*/
+        Lox.interpreter.interpret(statements);
     }
 
     static void error(int line, String message) {

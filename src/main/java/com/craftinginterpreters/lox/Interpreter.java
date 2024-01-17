@@ -1,6 +1,11 @@
 package com.craftinginterpreters.lox;
 
-class Interpreter implements Expr.Visitor<Object> {
+import java.util.List;
+
+class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
+    private Environment environment = new Environment();
+
+/* Executing statements 8.1.3
     void interpret(Expr expression) {
         try {
             Object value = this.evaluate(expression);
@@ -9,9 +14,73 @@ class Interpreter implements Expr.Visitor<Object> {
             Lox.runtimeError(error);
         }
     }
+*/
+    void interpret(List<Stmt> statements) {
+        try {
+            for (Stmt statement : statements) {
+                this.execute(statement);
+            }
+        } catch (RuntimeError error) {
+            Lox.runtimeError(error);
+        }
+    }
 
     private Object evaluate(Expr expr) {
         return expr.accept(this);
+    }
+
+    private void execute(Stmt stmt) {
+        stmt.accept(this);
+    }
+
+    void executeBlock(List<Stmt> statements, Environment environment) {
+        Environment previous = this.environment;
+        try {
+            this.environment = environment;
+
+            for (Stmt statement : statements) {
+                this.execute(statement);
+            }
+        } finally {
+            this.environment = previous;
+        }
+    }
+
+    @Override
+    public Void visitBlockStmt(Stmt.Block stmt) {
+        this.executeBlock(stmt.statements, new Environment(this.environment));
+        return null;
+    }
+
+    @Override
+    public Void visitExpressionStmt(Stmt.Expression stmt) {
+        this.evaluate(stmt.expression);
+        return null;
+    }
+
+    @Override
+    public Void visitPrintStmt(Stmt.Print stmt) {
+        Object value = this.evaluate(stmt.expression);
+        System.out.println(this.stringify(value));
+        return null;
+    }
+
+    @Override
+    public Void visitVarStmt(Stmt.Var stmt) {
+        Object value = null;
+        if (stmt.initializer != null) {
+            value = this.evaluate(stmt.initializer);
+        }
+
+        this.environment.define(stmt.name.lexeme, value);
+        return null;
+    }
+
+    @Override
+    public Object visitAssignExpr(Expr.Assign expr) {
+        Object value = this.evaluate(expr.value);
+        this.environment.assign(expr.name, value);
+        return value;
     }
 
     @Override
@@ -87,6 +156,11 @@ class Interpreter implements Expr.Visitor<Object> {
 
         // Unreachable.
         return null;
+    }
+
+    @Override
+    public Object visitVariableExpr(Expr.Variable expr) {
+        return this.environment.get(expr.name);
     }
 
     private void checkNumberOperand(Token operator, Object operand) {
