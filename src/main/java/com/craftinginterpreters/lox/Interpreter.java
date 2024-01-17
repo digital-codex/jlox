@@ -1,7 +1,9 @@
 package com.craftinginterpreters.lox;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 /* Telling time 10.2.1
@@ -9,6 +11,7 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 */
     final Environment globals = new Environment();
     private Environment environment = globals;
+    private final Map<Expr, Integer> locals = new HashMap<>();
 
     Interpreter() {
         globals.define("clock", new LoxCallable() {
@@ -55,6 +58,10 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
     private void execute(Stmt stmt) {
         stmt.accept(this);
+    }
+
+    void resolve(Expr expr, int depth) {
+        this.locals.put(expr, depth);
     }
 
     void executeBlock(List<Stmt> statements, Environment environment) {
@@ -139,7 +146,16 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     @Override
     public Object visitAssignExpr(Expr.Assign expr) {
         Object value = this.evaluate(expr.value);
+/* Assigning to a resolved variable
         this.environment.assign(expr.name, value);
+*/
+
+        Integer distance = this.locals.get(expr);
+        if (distance != null) {
+            this.environment.assignAt(distance, expr.name, value);
+        } else {
+            this.globals.assign(expr.name, value);
+        }
         return value;
     }
 
@@ -258,7 +274,19 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
     @Override
     public Object visitVariableExpr(Expr.Variable expr) {
+/*
         return this.environment.get(expr.name);
+*/
+        return this.lookUpVariable(expr.name, expr);
+    }
+
+    private Object lookUpVariable(Token name, Expr expr) {
+        Integer distance = this.locals.get(expr);
+        if (distance != null) {
+            return this.environment.getAt(distance, name.lexeme);
+        } else {
+            return this.globals.get(name);
+        }
     }
 
     private void checkNumberOperand(Token operator, Object operand) {

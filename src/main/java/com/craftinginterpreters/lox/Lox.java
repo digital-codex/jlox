@@ -71,6 +71,12 @@ public class Lox {
 /* Executing statements 8.1.3
         Lox.interpreter.interpret(expression);
 */
+        Resolver resolver = new Resolver(interpreter);
+        resolver.resolve(statements);
+
+        // Stop if there was a resolution error.
+        if (Lox.hadError) return;
+
         Lox.interpreter.interpret(statements);
     }
 
