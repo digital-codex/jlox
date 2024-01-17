@@ -39,7 +39,12 @@ class Parser {
     private Expr comparison() {
         Expr expr = this.term();
 
-        while (this.match(TokenType.GREATER, TokenType.GREATER_EQUAL, TokenType.LESS, TokenType.LESS_EQUAL)) {
+        while (
+                this.match(
+                        TokenType.GREATER, TokenType.GREATER_EQUAL,
+                        TokenType.LESS, TokenType.LESS_EQUAL
+                )
+        ) {
             Token operator = this.previous();
             Expr right = this.term();
             expr = new Expr.Binary(expr, operator, right);
@@ -93,7 +98,10 @@ class Parser {
 
         if (match(TokenType.LEFT_PAREN)) {
             Expr expr = this.expression();
-            this.consume(TokenType.RIGHT_PAREN, "Expect ')' after expression.");
+            this.consume(
+                    TokenType.RIGHT_PAREN,
+                    "Expect ')' after expression."
+            );
             return new Expr.Grouping(expr);
         }
 
