@@ -268,8 +268,7 @@ enum ScriptType {
     PARENTHESIZED_SUPERCLASS_1,
     SET_FIELDS_FROM_BASE_CLASS_1,
     INHERIT_FROM_NIL_1,
-    CONSTRUCTOR_2,
-    CONSTRUCTOR_3;
+    CONSTRUCTOR_2;
 
     private static final Map<ScriptType, String> lookup = new HashMap<>();
     static {
@@ -537,8 +536,7 @@ enum ScriptType {
         lookup.put( PARENTHESIZED_SUPERCLASS_1, "/home/treyvon/src/craftinginterpreters/test/inheritance/parenthesized_superclass.lox" );
         lookup.put( SET_FIELDS_FROM_BASE_CLASS_1, "/home/treyvon/src/craftinginterpreters/test/inheritance/set_fields_from_base_class.lox" );
         lookup.put( INHERIT_FROM_NIL_1, "/home/treyvon/src/craftinginterpreters/test/inheritance/inherit_from_nil.lox" );
-        lookup.put( CONSTRUCTOR_3, "/home/treyvon/src/craftinginterpreters/test/inheritance/constructor.lox" );
-        lookup.put( CONSTRUCTOR_3, "/home/treyvon/src/craftinginterpreters/test/inheritance/constructor.lox" );
+        lookup.put( CONSTRUCTOR_2, "/home/treyvon/src/craftinginterpreters/test/inheritance/constructor.lox" );
     }
 
     public static String lookup(ScriptType type) {

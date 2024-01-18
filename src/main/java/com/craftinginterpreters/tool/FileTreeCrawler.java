@@ -38,6 +38,8 @@ public class FileTreeCrawler {
                     }
                 }
             } while (!queue.isEmpty());
+
+            return matches;
         }
 
         if (match.test(current)) {
