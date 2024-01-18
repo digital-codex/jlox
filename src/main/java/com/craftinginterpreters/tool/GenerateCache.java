@@ -3,6 +3,7 @@ package com.craftinginterpreters.tool;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -34,7 +35,7 @@ public class GenerateCache {
             paths.addAll(GenerateCache.findScripts(dir));
         }
 
-        GenerateCache.index(outputDir, paths);
+        GenerateCache.indexScripts(outputDir, paths);
     }
 
     public static List<Path> findScripts(String directory) {
@@ -44,9 +45,9 @@ public class GenerateCache {
         );
     }
 
-    public static void index(String outputDir, List<Path> scripts) throws IOException {
+    public static void indexScripts(String outputDir, List<Path> scripts) throws IOException {
         String file = outputDir + "/ScriptType.java";
-        PrintWriter writer = new PrintWriter(file, "UTF-8");
+        PrintWriter writer = new PrintWriter(file, StandardCharsets.UTF_8);
         String pkg = outputDir.split("src/main/java/")[1]
                 .replace("/", ".");
         writer.println("package " + pkg + ";");

@@ -27,8 +27,10 @@ class LoxClass implements LoxCallable {
     }
 
     @Override
-    public String toString() {
-        return name;
+    public int arity() {
+        LoxFunction initializer = this.findMethod("init");
+        if (initializer == null) return 0;
+        return initializer.arity();
     }
 
     @Override
@@ -36,6 +38,7 @@ class LoxClass implements LoxCallable {
         LoxInstance instance = new LoxInstance(this);
         LoxFunction initializer = this.findMethod("init");
         if (initializer != null) {
+            // TODO: return value of call is not used here
             initializer.bind(instance).call(interpreter, arguments);
         }
 
@@ -43,9 +46,7 @@ class LoxClass implements LoxCallable {
     }
 
     @Override
-    public int arity() {
-        LoxFunction initializer = this.findMethod("init");
-        if (initializer == null) return 0;
-        return initializer.arity();
+    public String toString() {
+        return name;
     }
 }

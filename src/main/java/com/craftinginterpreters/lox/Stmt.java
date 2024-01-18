@@ -3,16 +3,16 @@ package com.craftinginterpreters.lox;
 import java.util.List;
 
 abstract class Stmt {
-    interface Visitor<R> {
-        R visitBlockStmt(Block stmt);
-        R visitClassStmt(Class stmt);
-        R visitExpressionStmt(Expression stmt);
-        R visitFunctionStmt(Function stmt);
-        R visitIfStmt(If stmt);
-        R visitPrintStmt(Print stmt);
-        R visitReturnStmt(Return stmt);
-        R visitVarStmt(Var stmt);
-        R visitWhileStmt(While stmt);
+    interface Visitor {
+        void visitBlockStmt(Block stmt);
+        void visitClassStmt(Class stmt);
+        void visitExpressionStmt(Expression stmt);
+        void visitFunctionStmt(Function stmt);
+        void visitIfStmt(If stmt);
+        void visitPrintStmt(Print stmt);
+        void visitReturnStmt(Return stmt);
+        void visitVarStmt(Var stmt);
+        void visitWhileStmt(While stmt);
     }
     static class Block extends Stmt {
         Block(List<Stmt> statements) {
@@ -20,8 +20,8 @@ abstract class Stmt {
         }
 
         @Override
-        <R> R accept(Visitor<R> visitor) {
-            return visitor.visitBlockStmt(this);
+        void accept(Visitor visitor) {
+            visitor.visitBlockStmt(this);
         }
 
         final List<Stmt> statements;
@@ -34,8 +34,8 @@ abstract class Stmt {
         }
 
         @Override
-        <R> R accept(Visitor<R> visitor) {
-            return visitor.visitClassStmt(this);
+        void accept(Visitor visitor) {
+            visitor.visitClassStmt(this);
         }
 
         final Token name;
@@ -48,8 +48,8 @@ abstract class Stmt {
         }
 
         @Override
-        <R> R accept(Visitor<R> visitor) {
-            return visitor.visitExpressionStmt(this);
+        void accept(Visitor visitor) {
+            visitor.visitExpressionStmt(this);
         }
 
         final Expr expression;
@@ -62,8 +62,8 @@ abstract class Stmt {
         }
 
         @Override
-        <R> R accept(Visitor<R> visitor) {
-            return visitor.visitFunctionStmt(this);
+        void accept(Visitor visitor) {
+            visitor.visitFunctionStmt(this);
         }
 
         final Token name;
@@ -78,8 +78,8 @@ abstract class Stmt {
         }
 
         @Override
-        <R> R accept(Visitor<R> visitor) {
-            return visitor.visitIfStmt(this);
+        void accept(Visitor visitor) {
+            visitor.visitIfStmt(this);
         }
 
         final Expr condition;
@@ -92,8 +92,8 @@ abstract class Stmt {
         }
 
         @Override
-        <R> R accept(Visitor<R> visitor) {
-            return visitor.visitPrintStmt(this);
+        void accept(Visitor visitor) {
+            visitor.visitPrintStmt(this);
         }
 
         final Expr expression;
@@ -105,8 +105,8 @@ abstract class Stmt {
         }
 
         @Override
-        <R> R accept(Visitor<R> visitor) {
-            return visitor.visitReturnStmt(this);
+        void accept(Visitor visitor) {
+            visitor.visitReturnStmt(this);
         }
 
         final Token keyword;
@@ -119,8 +119,8 @@ abstract class Stmt {
         }
 
         @Override
-        <R> R accept(Visitor<R> visitor) {
-            return visitor.visitVarStmt(this);
+        void accept(Visitor visitor) {
+            visitor.visitVarStmt(this);
         }
 
         final Token name;
@@ -133,13 +133,13 @@ abstract class Stmt {
         }
 
         @Override
-        <R> R accept(Visitor<R> visitor) {
-            return visitor.visitWhileStmt(this);
+        void accept(Visitor visitor) {
+            visitor.visitWhileStmt(this);
         }
 
         final Expr condition;
         final Stmt body;
     }
 
-    abstract <R> R accept(Visitor<R> visitor);
+    abstract void accept(Visitor visitor);
 }

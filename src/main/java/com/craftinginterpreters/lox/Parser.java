@@ -45,7 +45,8 @@ class Parser {
     private Stmt declaration() {
         try {
             if (this.match(TokenType.CLASS)) return this.classDeclaration();
-            if (this.match(TokenType.FUN)) return this.function("function");
+            if (this.match(TokenType.FUN))
+                return this.function("function");
             if (this.match(TokenType.VAR)) return this.varDeclaration();
 
             return this.statement();
@@ -276,8 +277,7 @@ class Parser {
             if (expr instanceof Expr.Variable) {
                 Token name = ((Expr.Variable) expr).name;
                 return new Expr.Assign(name, value);
-            } else if (expr instanceof Expr.Get) {
-                Expr.Get get = (Expr.Get) expr;
+            } else if (expr instanceof Expr.Get get) {
                 return new Expr.Set(get.object, get.name, value);
             }
 
@@ -288,77 +288,57 @@ class Parser {
     }
 
     private Expr or() {
-        Expr expr = this.and();
-
-        while (this.match(TokenType.OR)) {
-            Token operator = this.previous();
-            Expr right = this.and();
-            expr = new Expr.Logical(expr, operator, right);
-        }
-
-        return expr;
+        return this.infix(this::and, Expr.Logical::new, TokenType.OR);
     }
 
     private Expr and() {
-        Expr expr = this.equality();
-
-        while (this.match(TokenType.AND)) {
-            Token operator = this.previous();
-            Expr right = this.equality();
-            expr = new Expr.Logical(expr, operator, right);
-        }
-
-        return expr;
+        return this.infix(this::equality, Expr.Logical::new, TokenType.AND);
     }
 
     private Expr equality() {
-        Expr expr = this.comparison();
-
-        while (this.match(TokenType.BANG_EQUAL, TokenType.EQUAL_EQUAL)) {
-            Token operator = this.previous();
-            Expr right = this.comparison();
-            expr = new Expr.Binary(expr, operator, right);
-        }
-
-        return expr;
+        return this.infix(
+                this::comparison, Expr.Binary::new,
+                TokenType.BANG_EQUAL, TokenType.EQUAL_EQUAL
+        );
     }
 
     private Expr comparison() {
-        Expr expr = this.term();
-
-        while (
-                this.match(
-                        TokenType.GREATER, TokenType.GREATER_EQUAL,
-                        TokenType.LESS, TokenType.LESS_EQUAL
-                )
-        ) {
-            Token operator = this.previous();
-            Expr right = this.term();
-            expr = new Expr.Binary(expr, operator, right);
-        }
-
-        return expr;
+        return this.infix(
+                this::term, Expr.Binary::new,
+                TokenType.GREATER, TokenType.GREATER_EQUAL,
+                TokenType.LESS, TokenType.LESS_EQUAL
+        );
     }
 
     private Expr term() {
-        Expr expr = this.factor();
-
-        while (this.match(TokenType.MINUS, TokenType.PLUS)) {
-            Token operator = this.previous();
-            Expr right = this.factor();
-            expr = new Expr.Binary(expr, operator, right);
-        }
-
-        return expr;
+        return this.infix(
+                this::factor, Expr.Binary::new, TokenType.MINUS, TokenType.PLUS
+        );
     }
 
     private Expr factor() {
-        Expr expr = this.unary();
+        return this.infix(
+                this::unary, Expr.Binary::new, TokenType.SLASH, TokenType.STAR
+        );
+    }
 
-        while (this.match(TokenType.SLASH, TokenType.STAR)) {
+    @FunctionalInterface
+    interface Production {
+        Expr generate();
+    }
+
+    @FunctionalInterface
+    interface Infix {
+        Expr build(Expr left, Token operator, Expr right);
+    }
+
+    private Expr infix(Production next, Infix infix, TokenType... matches) {
+        Expr expr = next.generate();
+
+        while (this.match(matches)) {
             Token operator = this.previous();
-            Expr right = this.unary();
-            expr = new Expr.Binary(expr, operator, right);
+            Expr right = next.generate();
+            expr = infix.build(expr, operator, right);
         }
 
         return expr;
@@ -452,7 +432,7 @@ class Parser {
             return new Expr.Grouping(expr);
         }
 
-        throw this.error(this.peek(), "Expect expression.");
+        throw this.panic(this.peek(), "Expect expression.");
     }
 
     private boolean match(TokenType... types) {
@@ -466,10 +446,11 @@ class Parser {
         return false;
     }
 
+    // TODO: return value of consume is not used in multiple places
     private Token consume(TokenType type, String message) {
         if (this.check(type)) return this.advance();
 
-        throw this.error(this.peek(), message);
+        throw this.panic(this.peek(), message);
     }
 
     private boolean check(TokenType type) {
@@ -477,6 +458,7 @@ class Parser {
         return this.peek().type == type;
     }
 
+    // TODO: return value of advance is not used in multiple places
     private Token advance() {
         if (!this.isAtEnd()) this.current++;
         return this.previous();
@@ -494,8 +476,12 @@ class Parser {
         return this.tokens.get(this.current - 1);
     }
 
-    private ParseError error(Token token, String message) {
+    private void error(Token token, String message) {
         Lox.error(token, message);
+    }
+
+    private ParseError panic(Token token, String message) {
+        this.error(token, message);
         return new ParseError();
     }
 
@@ -506,15 +492,9 @@ class Parser {
             if (this.previous().type == TokenType.SEMICOLON) return;
 
             switch (this.peek().type) {
-                case CLASS:
-                case FUN:
-                case VAR:
-                case FOR:
-                case IF:
-                case WHILE:
-                case PRINT:
-                case RETURN:
+                case CLASS, FUN, VAR, FOR, IF, WHILE, PRINT, RETURN -> {
                     return;
+                }
             }
 
             this.advance();

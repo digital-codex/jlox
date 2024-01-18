@@ -25,7 +25,7 @@ public class FileTreeCrawler {
             do {
                 current = queue.poll();
                 if (current == null)
-                    continue;
+                    break;
 
                 if (current.isDirectory()) {
                     File[] files = current.listFiles();

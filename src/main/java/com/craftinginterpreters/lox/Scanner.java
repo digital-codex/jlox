@@ -54,61 +54,33 @@ class Scanner {
     private void scanToken() {
         char c = this.advance();
         switch (c) {
-            case '(':
-                this.addToken(TokenType.LEFT_PAREN);
-                break;
-            case ')':
-                this.addToken(TokenType.RIGHT_PAREN);
-                break;
-            case '{':
-                this.addToken(TokenType.LEFT_BRACE);
-                break;
-            case '}':
-                this.addToken(TokenType.RIGHT_BRACE);
-                break;
-            case ',':
-                this.addToken(TokenType.COMMA);
-                break;
-            case '.':
-                this.addToken(TokenType.DOT);
-                break;
-            case '-':
-                this.addToken(TokenType.MINUS);
-                break;
-            case '+':
-                this.addToken(TokenType.PLUS);
-                break;
-            case ';':
-                this.addToken(TokenType.SEMICOLON);
-                break;
-            case '*':
-                this.addToken(TokenType.STAR);
-                break;
-            case '!':
-                this.addToken(
-                        this.match('=') ? TokenType.BANG_EQUAL
-                                : TokenType.BANG
-                );
-                break;
-            case '=':
-                this.addToken(
-                        this.match('=') ? TokenType.EQUAL_EQUAL
-                                : TokenType.EQUAL
-                );
-                break;
-            case '<':
-                this.addToken(
-                        this.match('=') ? TokenType.LESS_EQUAL
-                                : TokenType.LESS
-                );
-                break;
-            case '>':
-                this.addToken(
-                        this.match('=') ? TokenType.GREATER_EQUAL
-                                : TokenType.GREATER
-                );
-                break;
-            case '/':
+            case '(' -> this.addToken(TokenType.LEFT_PAREN);
+            case ')' -> this.addToken(TokenType.RIGHT_PAREN);
+            case '{' -> this.addToken(TokenType.LEFT_BRACE);
+            case '}' -> this.addToken(TokenType.RIGHT_BRACE);
+            case ',' -> this.addToken(TokenType.COMMA);
+            case '.' -> this.addToken(TokenType.DOT);
+            case '-' -> this.addToken(TokenType.MINUS);
+            case '+' -> this.addToken(TokenType.PLUS);
+            case ';' -> this.addToken(TokenType.SEMICOLON);
+            case '*' -> this.addToken(TokenType.STAR);
+            case '!' -> this.addToken(
+                    this.match('=') ? TokenType.BANG_EQUAL
+                            : TokenType.BANG
+            );
+            case '=' -> this.addToken(
+                    this.match('=') ? TokenType.EQUAL_EQUAL
+                            : TokenType.EQUAL
+            );
+            case '<' -> this.addToken(
+                    this.match('=') ? TokenType.LESS_EQUAL
+                            : TokenType.LESS
+            );
+            case '>' -> this.addToken(
+                    this.match('=') ? TokenType.GREATER_EQUAL
+                            : TokenType.GREATER
+            );
+            case '/' -> {
                 if (this.match('/')) {
                     // A comment goes until the end of the line.
                     while (this.peek() != '\n' && !this.isAtEnd())
@@ -116,23 +88,13 @@ class Scanner {
                 } else {
                     this.addToken(TokenType.SLASH);
                 }
-                break;
-
-            case ' ':
-            case '\r':
-            case '\t':
+            }
+            case ' ', '\r', '\t' -> {
                 // Ignore whitespace.
-                break;
-
-            case '\n':
-                this.line++;
-                break;
-
-            case '"':
-                this.string();
-                break;
-
-            default:
+            }
+            case '\n' -> this.line++;
+            case '"' -> this.string();
+            default -> {
                 if (this.isDigit(c)) {
                     this.number();
                 } else if (this.isAlpha(c)) {
@@ -140,7 +102,7 @@ class Scanner {
                 } else {
                     Lox.error(line, "Unexpected character.");
                 }
-                break;
+            }
         }
     }
 
@@ -231,6 +193,7 @@ class Scanner {
         return this.current >= this.source.length();
     }
 
+    // TODO: return value of advance is not used in multiple places
     private char advance() {
         return this.source.charAt(this.current++);
     }

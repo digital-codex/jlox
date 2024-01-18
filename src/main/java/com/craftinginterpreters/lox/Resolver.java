@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Stack;
 
-class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
+class Resolver implements Expr.Visitor<Void>, Stmt.Visitor {
     private enum FunctionType {
         NONE,
         FUNCTION,
@@ -35,15 +35,14 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     }
 
     @Override
-    public Void visitBlockStmt(Stmt.Block stmt) {
+    public void visitBlockStmt(Stmt.Block stmt) {
         this.beginScope();
         this.resolve(stmt.statements);
         this.endScope();
-        return null;
     }
 
     @Override
-    public Void visitClassStmt(Stmt.Class stmt) {
+    public void visitClassStmt(Stmt.Class stmt) {
         ClassType enclosingClass = this.currentClass;
         this.currentClass = ClassType.CLASS;
 
@@ -84,40 +83,35 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         if (stmt.superclass != null) this.endScope();
 
         this.currentClass = enclosingClass;
-        return null;
     }
 
     @Override
-    public Void visitExpressionStmt(Stmt.Expression stmt) {
+    public void visitExpressionStmt(Stmt.Expression stmt) {
         this.resolve(stmt.expression);
-        return null;
     }
 
     @Override
-    public Void visitFunctionStmt(Stmt.Function stmt) {
+    public void visitFunctionStmt(Stmt.Function stmt) {
         this.declare(stmt.name);
         this.define(stmt.name);
 
         this.resolveFunction(stmt, FunctionType.FUNCTION);
-        return null;
     }
 
     @Override
-    public Void visitIfStmt(Stmt.If stmt) {
+    public void visitIfStmt(Stmt.If stmt) {
         this.resolve(stmt.condition);
         this.resolve(stmt.thenBranch);
         if (stmt.elseBranch != null) this.resolve(stmt.elseBranch);
-        return null;
     }
 
     @Override
-    public Void visitPrintStmt(Stmt.Print stmt) {
+    public void visitPrintStmt(Stmt.Print stmt) {
         this.resolve(stmt.expression);
-        return null;
     }
 
     @Override
-    public Void visitReturnStmt(Stmt.Return stmt) {
+    public void visitReturnStmt(Stmt.Return stmt) {
         if (this.currentFunction == FunctionType.NONE) {
             Lox.error(
                     stmt.keyword, "Can't return from top-level code."
@@ -134,24 +128,21 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
             this.resolve(stmt.value);
         }
 
-        return null;
     }
 
     @Override
-    public Void visitVarStmt(Stmt.Var stmt) {
+    public void visitVarStmt(Stmt.Var stmt) {
         this.declare(stmt.name);
         if (stmt.initializer != null) {
             this.resolve(stmt.initializer);
         }
         this.define(stmt.name);
-        return null;
     }
 
     @Override
-    public Void visitWhileStmt(Stmt.While stmt) {
+    public void visitWhileStmt(Stmt.While stmt) {
         this.resolve(stmt.condition);
         this.resolve(stmt.body);
-        return null;
     }
 
     @Override

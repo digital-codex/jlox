@@ -1,5 +1,6 @@
 package com.craftinginterpreters.lox;
 
+// TODO: make token a record type
 class Token {
     final TokenType type;
     final String lexeme;

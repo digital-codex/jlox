@@ -2,6 +2,7 @@ package com.craftinginterpreters.lox;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 class Environment {
     final Environment enclosing;
@@ -50,6 +51,7 @@ class Environment {
     Environment ancestor(int distance) {
         Environment environment = this;
         for (int i = 0; i < distance; i++) {
+            Objects.requireNonNull(environment);
             environment = environment.enclosing;
         }
 

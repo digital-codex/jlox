@@ -41,18 +41,27 @@ public class Lox {
             List<ScriptType> potential = new ArrayList<>();
             for (ScriptType type : ScriptType.values()) {
                 String[] split = type.name().split("_");
-                String join = Arrays.stream(split).filter(x -> !x.equals(split[split.length - 1])).collect(Collectors.joining("_"));
+                String join = Arrays.stream(split)
+                        .filter(x -> !x.equals(split[split.length - 1]))
+                        .collect(Collectors.joining("_"));
                 if (name.compareToIgnoreCase(join) == 0) {
                     potential.add(type);
                 }
             }
 
             if (potential.size() > 1) {
-                System.out.println("You have multiple files matching: " + path);
-                System.out.println("please chose the file you would like ot execute");
+                System.out.println(
+                        "You have multiple files matching: " + path
+                );
+                System.out.println(
+                        "please chose the file you would like ot execute"
+                );
                 for (ScriptType type : potential) {
                     String[] indexes = type.name().split("_");
-                    System.out.println(indexes[indexes.length - 1] + " : " + ScriptType.lookup(type));
+                    System.out.println(
+                            indexes[indexes.length - 1] + " : "
+                                    + ScriptType.lookup(type)
+                    );
                 }
                 InputStreamReader input = new InputStreamReader(System.in);
                 BufferedReader reader = new BufferedReader(input);
@@ -60,27 +69,33 @@ public class Lox {
                 int index;
                 for (;;) {
                     String in = reader.readLine();
-                    try {
-                        index = Integer.parseInt(in);
-                        if (index > 0 && index <= potential.size())
-                            break;
-
-                    } catch (Exception e) {}
+                    index = Integer.parseInt(in);
+                    if (index > 0 && index <= potential.size())
+                        break;
 
                     System.out.println(in + " is not a valid index");
                     for (ScriptType type : potential) {
                         String[] indexes = type.name().split("_");
-                        System.out.println(indexes[indexes.length - 1] + " : " + ScriptType.lookup(type));
+                        System.out.println(
+                                indexes[indexes.length - 1] + " : "
+                                        + ScriptType.lookup(type)
+                        );
                     }
                 }
 
-                byte[] bytes = Files.readAllBytes(Paths.get(ScriptType.lookup(potential.get(index - 1))));
+                byte[] bytes = Files.readAllBytes(
+                        Paths.get(ScriptType.lookup(potential.get(index - 1)))
+                );
                 Lox.run(new String(bytes, Charset.defaultCharset()));
             } else if (potential.size() == 1) {
-                byte[] bytes = Files.readAllBytes(Paths.get(ScriptType.lookup(potential.get(0))));
+                byte[] bytes = Files.readAllBytes(
+                        Paths.get(ScriptType.lookup(potential.get(0)))
+                );
                 Lox.run(new String(bytes, Charset.defaultCharset()));
             } else {
-                System.err.println(path + " is not a valid script or a cached script name.");
+                System.err.println(
+                        path + " is not a valid script or a cached script name."
+                );
                 System.exit(65);
             }
         }
