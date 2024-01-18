@@ -6,9 +6,6 @@ import java.util.List;
 import java.util.Map;
 
 class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
-/* Telling time 10.2.1
-    private Environment environment = new Environment();
-*/
     final Environment globals = new Environment();
     private Environment environment = globals;
     private final Map<Expr, Integer> locals = new HashMap<>();
@@ -84,6 +81,23 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     }
 
     @Override
+    public Void visitClassStmt(Stmt.Class stmt) {
+        this.environment.define(stmt.name.lexeme, null);
+/* Methods on Classes 12.5
+        LoxClass klass = new LoxClass(stmt.name.lexeme);
+*/
+        Map<String, LoxFunction> methods = new HashMap<>();
+        for (Stmt.Function method : stmt.methods) {
+            LoxFunction function = new LoxFunction(method, environment, method.name.lexeme.equals("init"));
+            methods.put(method.name.lexeme, function);
+        }
+
+        LoxClass klass = new LoxClass(stmt.name.lexeme, methods);
+        this.environment.assign(stmt.name, klass);
+        return null;
+    }
+
+    @Override
     public Void visitExpressionStmt(Stmt.Expression stmt) {
         this.evaluate(stmt.expression);
         return null;
@@ -91,10 +105,7 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
     @Override
     public Void visitFunctionStmt(Stmt.Function stmt) {
-/* Local Functions and Closures 10.6
-        LoxFunction function = new LoxFunction(stmt);
-*/
-        LoxFunction function = new LoxFunction(stmt, this.environment);
+        LoxFunction function = new LoxFunction(stmt, this.environment, false);
         this.environment.define(stmt.name.lexeme, function);
         return null;
     }
@@ -191,9 +202,6 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
                     return (String) left + (String) right;
                 }
 
-/* Runtime Errors 7.3
-                break;
-*/
                 throw new RuntimeError(
                         expr.operator,
                         "Operands must be two numbers or two strings."
@@ -234,6 +242,16 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     }
 
     @Override
+    public Object visitGetExpr(Expr.Get expr) {
+        Object object = this.evaluate(expr.object);
+        if (object instanceof LoxInstance) {
+            return ((LoxInstance) object).get(expr.name);
+        }
+
+        throw new RuntimeError(expr.name, "Only instances have properties.");
+    }
+
+    @Override
     public Object visitGroupingExpr(Expr.Grouping expr) {
         return this.evaluate(expr.expression);
     }
@@ -254,6 +272,24 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         }
 
         return this.evaluate(expr.right);
+    }
+
+    @Override
+    public Object visitSetExpr(Expr.Set expr) {
+        Object object = this.evaluate(expr.object);
+
+        if (!(object instanceof LoxInstance)) {
+            throw new RuntimeError(expr.name, "Only instances hav e fields.");
+        }
+
+        Object value = this.evaluate(expr.value);
+        ((LoxInstance) object).set(expr.name, value);
+        return value;
+    }
+
+    @Override
+    public Object visitThisExpr(Expr.This expr) {
+        return this.lookUpVariable(expr.keyword, expr);
     }
 
     @Override
