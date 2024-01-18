@@ -15,7 +15,8 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
 
     private enum ClassType {
         NONE,
-        CLASS
+        CLASS,
+        SUBCLASS
     }
 
     private final Interpreter  interpreter;
@@ -49,6 +50,23 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         this.declare(stmt.name);
         this.define(stmt.name);
 
+        if (stmt.superclass != null && stmt.name.lexeme.equals(stmt.superclass.name.lexeme)) {
+            Lox.error(
+                    stmt.superclass.name,
+                    "A class can't inherit from itself."
+            );
+        }
+
+        if (stmt.superclass != null) {
+            this.currentClass = ClassType.SUBCLASS;
+            this.resolve(stmt.superclass);
+        }
+
+        if (stmt.superclass != null) {
+            this.beginScope();
+            this.scopes.peek().put("super", true);
+        }
+
         this.beginScope();
         this.scopes.peek().put("this", true);
 
@@ -62,6 +80,8 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         }
 
         this.endScope();
+
+        if (stmt.superclass != null) this.endScope();
 
         this.currentClass = enclosingClass;
         return null;
@@ -78,9 +98,6 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         this.declare(stmt.name);
         this.define(stmt.name);
 
-/*
-        this.resolveFunction(stmt);
-*/
         this.resolveFunction(stmt, FunctionType.FUNCTION);
         return null;
     }
@@ -109,7 +126,10 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
 
         if (stmt.value != null) {
             if (this.currentFunction == FunctionType.INITIALIZER) {
-                Lox.error(stmt.keyword, "Can't return a value from an initializer.");
+                Lox.error(
+                        stmt.keyword,
+                        "Can't return a value from an initializer."
+                );
             }
             this.resolve(stmt.value);
         }
@@ -191,9 +211,30 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     }
 
     @Override
+    public Void visitSuperExpr(Expr.Super expr) {
+        if (this.currentClass == ClassType.NONE) {
+            Lox.error(
+                    expr.keyword,
+                    "Can't use 'super' outside of a class."
+            );
+        } else if (this.currentClass != ClassType.SUBCLASS) {
+            Lox.error(
+                    expr.keyword,
+                    "Can't use 'super' in a class with no superclass."
+            );
+        }
+
+        this.resolveLocal(expr, expr.keyword);
+        return null;
+    }
+
+    @Override
     public Void visitThisExpr(Expr.This expr) {
         if (this.currentClass == ClassType.NONE) {
-            Lox.error(expr.keyword, "Can't use 'this' outside of a class.");
+            Lox.error(
+                    expr.keyword,
+                    "Can't use 'this' outside of a class."
+            );
         }
 
         this.resolveLocal(expr, expr.keyword);
@@ -270,7 +311,9 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     private void resolveLocal(Expr expr, Token name) {
         for (int i = this.scopes.size() - 1; i >= 0; i--) {
             if (this.scopes.get(i).containsKey(name.lexeme)) {
-                this.interpreter.resolve(expr, this.scopes.size() - 1 - i);
+                this.interpreter.resolve(
+                        expr, this.scopes.size() - 1 - i
+                );
                 return;
             }
         }

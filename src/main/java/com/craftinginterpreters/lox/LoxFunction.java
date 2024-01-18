@@ -41,9 +41,6 @@ class LoxFunction implements LoxCallable {
             );
         }
 
-/* Returning from calls 10.5.1
-        interpreter.executeBlock(this.declaration.body, environment);
-*/
         try {
             interpreter.executeBlock(this.declaration.body, environment);
         } catch (Return returnValue) {

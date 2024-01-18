@@ -29,7 +29,7 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         });
     }
 
-/* Executing statements 8.1.3
+/* Statements 8.1
     void interpret(Expr expression) {
         try {
             Object value = this.evaluate(expression);
@@ -82,17 +82,39 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
     @Override
     public Void visitClassStmt(Stmt.Class stmt) {
+        Object superclass = null;
+        if (stmt.superclass != null) {
+            superclass = this.evaluate(stmt.superclass);
+            if (!(superclass instanceof LoxClass)) {
+                throw new RuntimeError(
+                        stmt.superclass.name,
+                        "Superclass must be a class."
+                );
+            }
+        }
+
         this.environment.define(stmt.name.lexeme, null);
-/* Methods on Classes 12.5
-        LoxClass klass = new LoxClass(stmt.name.lexeme);
-*/
+        if (stmt.superclass != null) {
+            this.environment = new Environment(this.environment);
+            this.environment.define("super", superclass);
+        }
+
         Map<String, LoxFunction> methods = new HashMap<>();
         for (Stmt.Function method : stmt.methods) {
-            LoxFunction function = new LoxFunction(method, environment, method.name.lexeme.equals("init"));
+            LoxFunction function = new LoxFunction(
+                    method, environment, method.name.lexeme.equals("init")
+            );
             methods.put(method.name.lexeme, function);
         }
 
-        LoxClass klass = new LoxClass(stmt.name.lexeme, methods);
+        LoxClass klass = new LoxClass(
+                stmt.name.lexeme, (LoxClass) superclass, methods
+        );
+
+        if (superclass != null) {
+            this.environment = this.environment.enclosing;
+        }
+
         this.environment.assign(stmt.name, klass);
         return null;
     }
@@ -105,7 +127,9 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
     @Override
     public Void visitFunctionStmt(Stmt.Function stmt) {
-        LoxFunction function = new LoxFunction(stmt, this.environment, false);
+        LoxFunction function = new LoxFunction(
+                stmt, this.environment, false
+        );
         this.environment.define(stmt.name.lexeme, function);
         return null;
     }
@@ -157,7 +181,7 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     @Override
     public Object visitAssignExpr(Expr.Assign expr) {
         Object value = this.evaluate(expr.value);
-/* Assigning to a resolved variable
+/* Interpreting Resolved Variables 11.4
         this.environment.assign(expr.name, value);
 */
 
@@ -177,7 +201,7 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
         switch (expr.operator.type) {
             case BANG_EQUAL: return !this.isEqual(left, right);
-            case EQUAL_EQUAL: return !this.isEqual(left, right);
+            case EQUAL_EQUAL: return this.isEqual(left, right);
             case GREATER:
                 this.checkNumberOperands(expr.operator, left, right);
                 return (double) left > (double) right;
@@ -207,8 +231,10 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
                         "Operands must be two numbers or two strings."
                 );
             case SLASH:
+                this.checkNumberOperands(expr.operator, left, right);
                 return (double) left / (double) right;
             case STAR:
+                this.checkNumberOperands(expr.operator, left, right);
                 return (double) left * (double) right;
         }
 
@@ -248,7 +274,9 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
             return ((LoxInstance) object).get(expr.name);
         }
 
-        throw new RuntimeError(expr.name, "Only instances have properties.");
+        throw new RuntimeError(
+                expr.name, "Only instances have properties."
+        );
     }
 
     @Override
@@ -279,12 +307,37 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         Object object = this.evaluate(expr.object);
 
         if (!(object instanceof LoxInstance)) {
-            throw new RuntimeError(expr.name, "Only instances hav e fields.");
+            throw new RuntimeError(
+                    expr.name, "Only instances have fields."
+            );
         }
 
         Object value = this.evaluate(expr.value);
         ((LoxInstance) object).set(expr.name, value);
         return value;
+    }
+
+    @Override
+    public Object visitSuperExpr(Expr.Super expr) {
+        int distance = this.locals.get(expr);
+        LoxClass superclass = (LoxClass) this.environment.getAt(
+                distance, "super"
+        );
+
+        LoxInstance object = (LoxInstance) this.environment.getAt(
+                distance - 1, "this"
+        );
+
+        LoxFunction method = superclass.findMethod(expr.method.lexeme);
+
+        if (method == null) {
+            throw new RuntimeError(
+                    expr.method,
+                    "Undefined property '" + expr.method.lexeme + "'."
+            );
+        }
+
+        return method.bind(object);
     }
 
     @Override
@@ -310,7 +363,7 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
     @Override
     public Object visitVariableExpr(Expr.Variable expr) {
-/*
+/* Interpreting Resolved Variables 11.4
         return this.environment.get(expr.name);
 */
         return this.lookUpVariable(expr.name, expr);
@@ -346,6 +399,10 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     private boolean isEqual(Object a, Object b) {
         if (a == null && b == null) return true;
         if (a == null) return false;
+
+        if (a.equals(Double.NaN) && b.equals(Double.NaN)) {
+            return false;
+        }
 
         return a.equals(b);
     }

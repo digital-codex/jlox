@@ -102,8 +102,6 @@ enum ScriptType {
     RETURN_IN_NESTED_FUNCTION_1,
     $394_1,
     $40_1,
-    EVALUATE_1,
-    PARSE_1,
     INFIX_OPERATOR_1,
     PREFIX_OPERATOR_1,
     ASSOCIATIVITY_1,
@@ -144,12 +142,6 @@ enum ScriptType {
     CALL_SAME_METHOD_1,
     CONSTRUCTOR_1,
     SUPER_IN_CLOSURE_IN_INHERITED_METHOD_1,
-    WHITESPACE_1,
-    IDENTIFIERS_1,
-    KEYWORDS_1,
-    STRINGS_1,
-    PUNCTUATORS_1,
-    NUMBERS_1,
     REFER_TO_NAME_1,
     EXTRA_ARGUMENTS_3,
     TOO_MANY_PARAMETERS_1,
@@ -370,8 +362,6 @@ enum ScriptType {
         lookup.put( RETURN_IN_NESTED_FUNCTION_1, "/home/treyvon/src/craftinginterpreters/test/constructor/return_in_nested_function.lox" );
         lookup.put( $394_1, "/home/treyvon/src/craftinginterpreters/test/regression/394.lox" );
         lookup.put( $40_1, "/home/treyvon/src/craftinginterpreters/test/regression/40.lox" );
-        lookup.put( EVALUATE_1, "/home/treyvon/src/craftinginterpreters/test/expressions/evaluate.lox" );
-        lookup.put( PARSE_1, "/home/treyvon/src/craftinginterpreters/test/expressions/parse.lox" );
         lookup.put( INFIX_OPERATOR_1, "/home/treyvon/src/craftinginterpreters/test/assignment/infix_operator.lox" );
         lookup.put( PREFIX_OPERATOR_1, "/home/treyvon/src/craftinginterpreters/test/assignment/prefix_operator.lox" );
         lookup.put( ASSOCIATIVITY_1, "/home/treyvon/src/craftinginterpreters/test/assignment/associativity.lox" );
@@ -412,12 +402,6 @@ enum ScriptType {
         lookup.put( CALL_SAME_METHOD_1, "/home/treyvon/src/craftinginterpreters/test/super/call_same_method.lox" );
         lookup.put( CONSTRUCTOR_1, "/home/treyvon/src/craftinginterpreters/test/super/constructor.lox" );
         lookup.put( SUPER_IN_CLOSURE_IN_INHERITED_METHOD_1, "/home/treyvon/src/craftinginterpreters/test/super/super_in_closure_in_inherited_method.lox" );
-        lookup.put( WHITESPACE_1, "/home/treyvon/src/craftinginterpreters/test/scanning/whitespace.lox" );
-        lookup.put( IDENTIFIERS_1, "/home/treyvon/src/craftinginterpreters/test/scanning/identifiers.lox" );
-        lookup.put( KEYWORDS_1, "/home/treyvon/src/craftinginterpreters/test/scanning/keywords.lox" );
-        lookup.put( STRINGS_1, "/home/treyvon/src/craftinginterpreters/test/scanning/strings.lox" );
-        lookup.put( PUNCTUATORS_1, "/home/treyvon/src/craftinginterpreters/test/scanning/punctuators.lox" );
-        lookup.put( NUMBERS_1, "/home/treyvon/src/craftinginterpreters/test/scanning/numbers.lox" );
         lookup.put( REFER_TO_NAME_1, "/home/treyvon/src/craftinginterpreters/test/method/refer_to_name.lox" );
         lookup.put( EXTRA_ARGUMENTS_3, "/home/treyvon/src/craftinginterpreters/test/method/extra_arguments.lox" );
         lookup.put( TOO_MANY_PARAMETERS_1, "/home/treyvon/src/craftinginterpreters/test/method/too_many_parameters.lox" );

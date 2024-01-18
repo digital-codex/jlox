@@ -14,7 +14,7 @@ class Parser {
         this.tokens = tokens;
     }
 
-/* Parsing staements
+/* Statements 8.1
     Expr parse() {
         try {
             return this.expression();
@@ -26,7 +26,7 @@ class Parser {
     List<Stmt> parse() {
         List<Stmt> statements = new ArrayList<>();
         while (!this.isAtEnd()) {
-/* Parsing variables 8.2.2
+/* Global Variables 8.2
             statements.add(this.statement());
 */
             statements.add(this.declaration());
@@ -36,7 +36,7 @@ class Parser {
     }
 
     private Expr expression() {
-/* Assignment syntax
+/* Assignment 8.4
         return this.equality();
 */
         return this.assignment();
@@ -56,17 +56,32 @@ class Parser {
     }
 
     private Stmt classDeclaration() {
-        Token name = this.consume(TokenType.IDENTIFIER, "Expect class name.");
-        this.consume(TokenType.LEFT_BRACE, "Expect '{' before class body.");
+        Token name = this.consume(
+                TokenType.IDENTIFIER, "Expect class name."
+        );
+
+        Expr.Variable superclass = null;
+        if (this.match(TokenType.LESS)) {
+            this.consume(
+                    TokenType.IDENTIFIER, "Expect superclass name."
+            );
+            superclass = new Expr.Variable(this.previous());
+        }
+
+        this.consume(
+                TokenType.LEFT_BRACE, "Expect '{' before class body."
+        );
 
         List<Stmt.Function> methods = new ArrayList<>();
         while (!this.check(TokenType.RIGHT_BRACE) && !this.isAtEnd()) {
             methods.add(this.function("method"));
         }
 
-        this.consume(TokenType.RIGHT_BRACE, "Expect '}' after class body.");
+        this.consume(
+                TokenType.RIGHT_BRACE, "Expect '}' after class body."
+        );
 
-        return new Stmt.Class(name, methods);
+        return new Stmt.Class(name, superclass, methods);
     }
 
     private Stmt statement() {
@@ -390,7 +405,10 @@ class Parser {
             if (this.match(TokenType.LEFT_PAREN)) {
                 expr = this.finishCall(expr);
             } else if (this.match(TokenType.DOT)) {
-                Token name = this.consume(TokenType.IDENTIFIER, "Expect property name after '.'.");
+                Token name = this.consume(
+                        TokenType.IDENTIFIER,
+                        "Expect property name after '.'."
+                );
                 expr = new Expr.Get(expr, name);
             } else {
                 break;
@@ -407,6 +425,16 @@ class Parser {
 
         if (this.match(TokenType.NUMBER, TokenType.STRING)) {
             return new Expr.Literal(this.previous().literal);
+        }
+
+        if (this.match(TokenType.SUPER)) {
+            Token keyword = this.previous();
+            this.consume(TokenType.DOT, "Expect '.' after 'super'.");
+            Token method = this.consume(
+                    TokenType.IDENTIFIER,
+                    "Expect superclass method name."
+            );
+            return new Expr.Super(keyword, method);
         }
 
         if (this.match(TokenType.THIS)) return new Expr.This(this.previous());

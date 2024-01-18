@@ -1,23 +1,16 @@
 package com.craftinginterpreters.lox;
 
-import com.craftinginterpreters.tool.GenerateScript;
-
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.PrintWriter;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
-import java.nio.file.InvalidPathException;
-import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.stream.Collectors;
 
 public class Lox {
     private static final Interpreter interpreter = new Interpreter();
@@ -47,7 +40,9 @@ public class Lox {
             }
             List<ScriptType> potential = new ArrayList<>();
             for (ScriptType type : ScriptType.values()) {
-                if (name.compareToIgnoreCase(type.name().split("_[1-9]")[0]) == 0) {
+                String[] split = type.name().split("_");
+                String join = Arrays.stream(split).filter(x -> !x.equals(split[split.length - 1])).collect(Collectors.joining("_"));
+                if (name.compareToIgnoreCase(join) == 0) {
                     potential.add(type);
                 }
             }
@@ -67,7 +62,7 @@ public class Lox {
                     String in = reader.readLine();
                     try {
                         index = Integer.parseInt(in);
-                        if (index >= 0 && index < potential.size())
+                        if (index > 0 && index <= potential.size())
                             break;
 
                     } catch (Exception e) {}
@@ -79,7 +74,7 @@ public class Lox {
                     }
                 }
 
-                byte[] bytes = Files.readAllBytes(Paths.get(ScriptType.lookup(potential.get(index))));
+                byte[] bytes = Files.readAllBytes(Paths.get(ScriptType.lookup(potential.get(index - 1))));
                 Lox.run(new String(bytes, Charset.defaultCharset()));
             } else if (potential.size() == 1) {
                 byte[] bytes = Files.readAllBytes(Paths.get(ScriptType.lookup(potential.get(0))));
@@ -112,7 +107,7 @@ public class Lox {
         Scanner scanner = new Scanner(source);
         List<Token> tokens = scanner.scanTokens();
         Parser parser = new Parser(tokens);
-/* Executing statements 8.1.3
+/* Statements 8.1
         Expr expression = parser.parse();
 */
         List<Stmt> statements = parser.parse();
@@ -120,7 +115,7 @@ public class Lox {
         // Stop if there was a syntax error.
         if (Lox.hadError) return;
 
-/* Executing statements 8.1.3
+/* Statements 8.1
         Lox.interpreter.interpret(expression);
 */
         Resolver resolver = new Resolver(interpreter);
@@ -140,6 +135,7 @@ public class Lox {
         System.err.println(
                 "[line " + line + "] Error" + where + ": " + message
         );
+        Lox.hadError = true;
     }
 
     static void error(Token token, String message) {

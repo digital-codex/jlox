@@ -10,7 +10,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class GenerateScript {
+public class GenerateCache {
     public static void main(String[] args) throws IOException {
         String outputDir = null;
         List<String> searchDirs = new ArrayList<>();
@@ -23,26 +23,32 @@ public class GenerateScript {
         }
 
         if (outputDir == null) {
-            System.err.println("Usage generate_script <-o output directory> [search directory...]");
+            System.err.println(
+                    "Usage generate_cache <-o output directory> [search directory...]"
+            );
             System.exit(64);
         }
 
         List<Path> paths = new ArrayList<>();
         for (String dir : searchDirs) {
-            paths.addAll(GenerateScript.findScripts(dir));
+            paths.addAll(GenerateCache.findScripts(dir));
         }
 
-        GenerateScript.index(outputDir, paths);
+        GenerateCache.index(outputDir, paths);
     }
 
     public static List<Path> findScripts(String directory) {
-        return FileTreeCrawler.crawl(Paths.get(directory), (File f) -> f.getName().split("\\.")[1].equals("lox"));
+        return FileTreeCrawler.crawl(
+                Paths.get(directory),
+                (File f) -> f.getName().split("\\.")[1].equals("lox")
+        );
     }
 
     public static void index(String outputDir, List<Path> scripts) throws IOException {
         String file = outputDir + "/ScriptType.java";
         PrintWriter writer = new PrintWriter(file, "UTF-8");
-        String pkg = outputDir.split("src/main/java/")[1].replace("/", ".");
+        String pkg = outputDir.split("src/main/java/")[1]
+                .replace("/", ".");
         writer.println("package " + pkg + ";");
         writer.println();
         writer.println("import java.util.HashMap;");
@@ -53,7 +59,8 @@ public class GenerateScript {
         Map<String, Integer> counter = new HashMap<>();
         Map<Path, String> names = new HashMap<>();
         for (int i = 0; i < scripts.size(); ++i) {
-            String name = scripts.get(i).getFileName().toString().split("\\.")[0].trim().toUpperCase();
+            String name = scripts.get(i).getFileName().toString()
+                    .split("\\.")[0].trim().toUpperCase();
             if (Character.isDigit(name.charAt(0))) {
                 name = "$" + name;
             }
@@ -72,10 +79,15 @@ public class GenerateScript {
         }
         writer.println();
 
-        writer.println("    private static final Map<ScriptType, String> lookup = new HashMap<>();");
+        writer.println(
+                "    private static final Map<ScriptType, String> lookup = new HashMap<>();"
+        );
         writer.println("    static {");
         for (Path script : scripts) {
-            writer.println("        lookup.put( " + names.get(script) + ", \"" + script + "\" );");
+            writer.println(
+                    "        lookup.put( " + names.get(script) + ", \""
+                            + script + "\" );"
+            );
         }
         writer.println("    }");
         writer.println();

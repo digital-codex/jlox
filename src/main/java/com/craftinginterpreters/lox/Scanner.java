@@ -133,16 +133,12 @@ class Scanner {
                 break;
 
             default:
-/* Number literal 4.6.2
-                Lox.error(line, "Unexpected character.");
-*/
                 if (this.isDigit(c)) {
                     this.number();
                 } else if (this.isAlpha(c)) {
                     this.identifier();
                 } else {
                     Lox.error(line, "Unexpected character.");
-
                 }
                 break;
         }
