@@ -32,7 +32,7 @@ class LoxFunction implements LoxCallable {
         Environment environment = new Environment(this.closure);
         for (int i = 0; i < this.declaration.params.size(); i++) {
             environment.define(
-                    this.declaration.params.get(i).lexeme, arguments.get(i)
+                    this.declaration.params.get(i).lexeme(), arguments.get(i)
             );
         }
 
@@ -50,6 +50,6 @@ class LoxFunction implements LoxCallable {
 
     @Override
     public String toString() {
-        return "<fn " + this.declaration.name.lexeme + ">";
+        return "<fn " + this.declaration.name.lexeme() + ">";
     }
 }

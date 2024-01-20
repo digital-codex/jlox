@@ -63,13 +63,13 @@ class Parser {
 
         Expr.Variable superclass = null;
         if (this.match(TokenType.LESS)) {
-            this.consume(
+            this.verify(
                     TokenType.IDENTIFIER, "Expect superclass name."
             );
             superclass = new Expr.Variable(this.previous());
         }
 
-        this.consume(
+        this.verify(
                 TokenType.LEFT_BRACE, "Expect '{' before class body."
         );
 
@@ -78,7 +78,7 @@ class Parser {
             methods.add(this.function("method"));
         }
 
-        this.consume(
+        this.verify(
                 TokenType.RIGHT_BRACE, "Expect '}' after class body."
         );
 
@@ -98,7 +98,7 @@ class Parser {
     }
 
     private Stmt forStatement() {
-        this.consume(TokenType.LEFT_PAREN, "Expect '(' after 'for'.");
+        this.verify(TokenType.LEFT_PAREN, "Expect '(' after 'for'.");
 
         Stmt initializer;
         if (this.match(TokenType.SEMICOLON)) {
@@ -113,7 +113,7 @@ class Parser {
         if (!this.check(TokenType.SEMICOLON)) {
             condition = this.expression();
         }
-        this.consume(
+        this.verify(
                 TokenType.SEMICOLON, "Expect ';' after loop condition."
         );
 
@@ -121,7 +121,7 @@ class Parser {
         if (!this.check(TokenType.RIGHT_PAREN)) {
             increment = this.expression();
         }
-        this.consume(
+        this.verify(
                 TokenType.RIGHT_PAREN, "Expect ')' after for clauses."
         );
         Stmt body = this.statement();
@@ -143,11 +143,9 @@ class Parser {
     }
 
     private Stmt ifStatement() {
-        this.consume(TokenType.LEFT_PAREN, "Expect '(' after 'if'.");
+        this.verify(TokenType.LEFT_PAREN, "Expect '(' after 'if'.");
         Expr condition = this.expression();
-        this.consume(
-                TokenType.RIGHT_PAREN, "Expect ')' after if condition."
-        );
+        this.verify(TokenType.RIGHT_PAREN, "Expect ')' after if condition.");
 
         Stmt thenBranch = this.statement();
         Stmt elseBranch = null;
@@ -160,7 +158,7 @@ class Parser {
 
     private Stmt printStatement() {
         Expr value = this.expression();
-        this.consume(TokenType.SEMICOLON, "Expect ';' after value.");
+        this.verify(TokenType.SEMICOLON, "Expect ';' after value.");
         return new Stmt.Print(value);
     }
 
@@ -171,7 +169,7 @@ class Parser {
             value = this.expression();
         }
 
-        this.consume(
+        this.verify(
                 TokenType.SEMICOLON, "Expect ';' after return value."
         );
         return new Stmt.Return(keyword, value);
@@ -187,7 +185,7 @@ class Parser {
             initializer = this.expression();
         }
 
-        this.consume(
+        this.verify(
                 TokenType.SEMICOLON,
                 "Expect ';' after variable declaration."
         );
@@ -195,11 +193,11 @@ class Parser {
     }
 
     private Stmt whileStatement() {
-        this.consume(
+        this.verify(
                 TokenType.LEFT_PAREN, "Expect '(' after 'while'."
         );
         Expr condition = this.expression();
-        this.consume(
+        this.verify(
                 TokenType.RIGHT_PAREN, "Expect ')' after condition."
         );
         Stmt body = this.statement();
@@ -209,7 +207,7 @@ class Parser {
 
     private Stmt expressionStatement() {
         Expr expr = this.expression();
-        this.consume(
+        this.verify(
                 TokenType.SEMICOLON, "Expect ';' after expression."
         );
         return new Stmt.Expression(expr);
@@ -219,7 +217,7 @@ class Parser {
         Token name = this.consume(
                 TokenType.IDENTIFIER, "Expect " + kind + " name."
         );
-        this.consume(
+        this.verify(
                 TokenType.LEFT_PAREN, "Expect '(' after " + kind
                         + " name."
         );
@@ -241,11 +239,11 @@ class Parser {
                 );
             } while (this.match(TokenType.COMMA));
         }
-        this.consume(
+        this.verify(
                 TokenType.RIGHT_PAREN, "Expect ')' after parameters."
         );
 
-        this.consume(
+        this.verify(
                 TokenType.LEFT_BRACE, "Expect '{' before " + kind
                         + " body."
         );
@@ -260,7 +258,7 @@ class Parser {
             statements.add(this.declaration());
         }
 
-        this.consume(TokenType.RIGHT_BRACE, "Expect '}' after block.");
+        this.verify(TokenType.RIGHT_BRACE, "Expect '}' after block.");
         return statements;
     }
 
@@ -274,9 +272,8 @@ class Parser {
             Token equals = this.previous();
             Expr value = this.assignment();
 
-            if (expr instanceof Expr.Variable) {
-                Token name = ((Expr.Variable) expr).name;
-                return new Expr.Assign(name, value);
+            if (expr instanceof Expr.Variable var) {
+                return new Expr.Assign(var.name, value);
             } else if (expr instanceof Expr.Get get) {
                 return new Expr.Set(get.object, get.name, value);
             }
@@ -329,6 +326,7 @@ class Parser {
 
     @FunctionalInterface
     interface Infix {
+        @SuppressWarnings("unused")
         Expr build(Expr left, Token operator, Expr right);
     }
 
@@ -404,12 +402,12 @@ class Parser {
         if (this.match(TokenType.NIL)) return new Expr.Literal(null);
 
         if (this.match(TokenType.NUMBER, TokenType.STRING)) {
-            return new Expr.Literal(this.previous().literal);
+            return new Expr.Literal(this.previous().literal());
         }
 
         if (this.match(TokenType.SUPER)) {
             Token keyword = this.previous();
-            this.consume(TokenType.DOT, "Expect '.' after 'super'.");
+            this.verify(TokenType.DOT, "Expect '.' after 'super'.");
             Token method = this.consume(
                     TokenType.IDENTIFIER,
                     "Expect superclass method name."
@@ -425,7 +423,7 @@ class Parser {
 
         if (match(TokenType.LEFT_PAREN)) {
             Expr expr = this.expression();
-            this.consume(
+            this.verify(
                     TokenType.RIGHT_PAREN,
                     "Expect ')' after expression."
             );
@@ -438,7 +436,7 @@ class Parser {
     private boolean match(TokenType... types) {
         for (TokenType type : types) {
             if (this.check(type)) {
-                this.advance();
+                this.proceed();
                 return true;
             }
         }
@@ -446,7 +444,14 @@ class Parser {
         return false;
     }
 
-    // TODO: return value of consume is not used in multiple places
+    private void verify(TokenType type, String message) {
+        if (!this.check(type)) {
+            throw this.panic(this.peek(), message);
+        }
+
+        this.proceed();
+    }
+
     private Token consume(TokenType type, String message) {
         if (this.check(type)) return this.advance();
 
@@ -455,17 +460,20 @@ class Parser {
 
     private boolean check(TokenType type) {
         if (this.isAtEnd()) return false;
-        return this.peek().type == type;
+        return this.peek().type() == type;
     }
 
-    // TODO: return value of advance is not used in multiple places
+    private void proceed() {
+        if (!this.isAtEnd()) this.current++;
+    }
+
     private Token advance() {
         if (!this.isAtEnd()) this.current++;
         return this.previous();
     }
 
     private boolean isAtEnd() {
-        return this.peek().type == TokenType.EOF;
+        return this.peek().type() == TokenType.EOF;
     }
 
     private Token peek() {
@@ -486,18 +494,18 @@ class Parser {
     }
 
     private void synchronize() {
-        this.advance();
+        this.proceed();
 
         while (!this.isAtEnd()) {
-            if (this.previous().type == TokenType.SEMICOLON) return;
+            if (this.previous().type() == TokenType.SEMICOLON) return;
 
-            switch (this.peek().type) {
+            switch (this.peek().type()) {
                 case CLASS, FUN, VAR, FOR, IF, WHILE, PRINT, RETURN -> {
                     return;
                 }
             }
 
-            this.advance();
+            this.proceed();
         }
     }
 }

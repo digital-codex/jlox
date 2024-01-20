@@ -1,8 +1,9 @@
 package com.craftinginterpreters.lox;
 
+import com.craftinginterpreters.util.Objects;
+
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 
 class Environment {
     final Environment enclosing;
@@ -17,20 +18,20 @@ class Environment {
     }
 
     Object get(Token name) {
-        if (this.values.containsKey(name.lexeme)) {
-            return this.values.get(name.lexeme);
+        if (this.values.containsKey(name.lexeme())) {
+            return this.values.get(name.lexeme());
         }
 
         if (this.enclosing != null) return this.enclosing.get(name);
 
         throw new RuntimeError(
-                name, "Undefined variable '" + name.lexeme + "'."
+                name, "Undefined variable '" + name.lexeme() + "'."
         );
     }
 
     void assign(Token name, Object value) {
-        if (this.values.containsKey(name.lexeme)) {
-            this.values.put(name.lexeme, value);
+        if (this.values.containsKey(name.lexeme())) {
+            this.values.put(name.lexeme(), value);
             return;
         }
 
@@ -40,7 +41,7 @@ class Environment {
         }
 
         throw new RuntimeError(
-                name, "Undefined variable '" + name.lexeme + "'."
+                name, "Undefined variable '" + name.lexeme() + "'."
         );
     }
 
@@ -51,7 +52,7 @@ class Environment {
     Environment ancestor(int distance) {
         Environment environment = this;
         for (int i = 0; i < distance; i++) {
-            Objects.requireNonNull(environment);
+            Objects.checkNotNull(environment);
             environment = environment.enclosing;
         }
 
@@ -63,6 +64,6 @@ class Environment {
     }
 
     void assignAt(int distance, Token name, Object value) {
-        this.ancestor(distance).values.put(name.lexeme, value);
+        this.ancestor(distance).values.put(name.lexeme(), value);
     }
 }

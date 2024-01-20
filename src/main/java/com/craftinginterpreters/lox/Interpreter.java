@@ -49,11 +49,11 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor {
         }
     }
 
-    private Object evaluate(Expr expr) {
+    protected Object evaluate(Expr expr) {
         return expr.accept(this);
     }
 
-    private void execute(Stmt stmt) {
+    protected void execute(Stmt stmt) {
         stmt.accept(this);
     }
 
@@ -92,7 +92,7 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor {
             }
         }
 
-        this.environment.define(stmt.name.lexeme, null);
+        this.environment.define(stmt.name.lexeme(), null);
         if (stmt.superclass != null) {
             this.environment = new Environment(this.environment);
             this.environment.define("super", superclass);
@@ -101,13 +101,13 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor {
         Map<String, LoxFunction> methods = new HashMap<>();
         for (Stmt.Function method : stmt.methods) {
             LoxFunction function = new LoxFunction(
-                    method, environment, method.name.lexeme.equals("init")
+                    method, environment, method.name.lexeme().equals("init")
             );
-            methods.put(method.name.lexeme, function);
+            methods.put(method.name.lexeme(), function);
         }
 
         LoxClass klass = new LoxClass(
-                stmt.name.lexeme, (LoxClass) superclass, methods
+                stmt.name.lexeme(), (LoxClass) superclass, methods
         );
 
         if (superclass != null) {
@@ -119,7 +119,6 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor {
 
     @Override
     public void visitExpressionStmt(Stmt.Expression stmt) {
-        // TODO: return value of evaluate is not used here
         this.evaluate(stmt.expression);
     }
 
@@ -128,7 +127,7 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor {
         LoxFunction function = new LoxFunction(
                 stmt, this.environment, false
         );
-        this.environment.define(stmt.name.lexeme, function);
+        this.environment.define(stmt.name.lexeme(), function);
     }
 
     @Override
@@ -161,7 +160,7 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor {
             value = this.evaluate(stmt.initializer);
         }
 
-        this.environment.define(stmt.name.lexeme, value);
+        this.environment.define(stmt.name.lexeme(), value);
     }
 
     @Override
@@ -192,29 +191,14 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor {
         Object left = this.evaluate(expr.left);
         Object right = this.evaluate(expr.right);
 
-        return switch (expr.operator.type) {
+        return switch (expr.operator.type()) {
             case BANG_EQUAL -> !this.isEqual(left, right);
             case EQUAL_EQUAL -> this.isEqual(left, right);
-            case GREATER -> {
-                this.checkNumberOperands(expr.operator, left, right);
-                yield  (double) left > (double) right;
-            }
-            case GREATER_EQUAL -> {
-                this.checkNumberOperands(expr.operator, left, right);
-                yield  (double) left >= (double) right;
-            }
-            case LESS -> {
-                this.checkNumberOperands(expr.operator, left, right);
-                yield  (double) left < (double) right;
-            }
-            case LESS_EQUAL -> {
-                this.checkNumberOperands(expr.operator, left, right);
-                yield  (double) left <= (double) right;
-            }
-            case MINUS -> {
-                this.checkNumberOperands(expr.operator, left, right);
-                yield  (double) left - (double) right;
-            }
+            case GREATER -> this.processNumberOperation(left, expr.operator, right, (l, r) -> l > r);
+            case GREATER_EQUAL -> this.processNumberOperation(left, expr.operator, right, (l, r) -> l >= r);
+            case LESS -> this.processNumberOperation(left, expr.operator, right, (l, r) -> l < r);
+            case LESS_EQUAL -> this.processNumberOperation(left, expr.operator, right, (l, r) -> l <= r);
+            case MINUS -> this.processNumberOperation(left, expr.operator, right, (l, r) -> l - r);
             case PLUS -> {
                 if (left instanceof Double l && right instanceof Double r) {
                     yield l + r;
@@ -227,14 +211,8 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor {
                         "Operands must be two numbers or two strings."
                 );
             }
-            case SLASH -> {
-                this.checkNumberOperands(expr.operator, left, right);
-                yield  (double) left / (double) right;
-            }
-            case STAR -> {
-                this.checkNumberOperands(expr.operator, left, right);
-                yield  (double) left * (double) right;
-            }
+            case SLASH -> this.processNumberOperation(left, expr.operator, right, (l, r) -> l / r);
+            case STAR -> this.processNumberOperation(left, expr.operator, right, (l, r) -> l * r);
             // Unreachable.
             default ->  null;
         };
@@ -291,7 +269,7 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor {
     public Object visitLogicalExpr(Expr.Logical expr) {
         Object left = this.evaluate(expr.left);
 
-        if (expr.operator.type == TokenType.OR) {
+        if (expr.operator.type() == TokenType.OR) {
             if (this.isTruthy(left)) return left;
         } else {
             if (!this.isTruthy(left)) return left;
@@ -326,12 +304,12 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor {
                 distance - 1, "this"
         );
 
-        LoxFunction method = superclass.findMethod(expr.method.lexeme);
+        LoxFunction method = superclass.findMethod(expr.method.lexeme());
 
         if (method == null) {
             throw new RuntimeError(
                     expr.method,
-                    "Undefined property '" + expr.method.lexeme + "'."
+                    "Undefined property '" + expr.method.lexeme() + "'."
             );
         }
 
@@ -347,11 +325,12 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor {
     public Object visitUnaryExpr(Expr.Unary expr) {
         Object right = this.evaluate(expr.right);
 
-        return switch (expr.operator.type) {
+        return switch (expr.operator.type()) {
             case BANG -> !this.isTruthy(right);
             case MINUS -> {
-                this.checkNumberOperand(expr.operator, right);
-                yield -(double) right;
+                if (right instanceof Double r) yield -r;
+
+                throw new RuntimeError(expr.operator, "Operand must be a number.");
             }
             // Unreachable.
             default -> null;
@@ -366,33 +345,35 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor {
         return this.lookUpVariable(expr.name, expr);
     }
 
-    private Object lookUpVariable(Token name, Expr expr) {
+    protected Object lookUpVariable(Token name, Expr expr) {
         Integer distance = this.locals.get(expr);
         if (distance != null) {
-            return this.environment.getAt(distance, name.lexeme);
+            return this.environment.getAt(distance, name.lexeme());
         } else {
             return this.globals.get(name);
         }
     }
 
-    private void checkNumberOperand(Token operator, Object operand) {
-        if (operand instanceof Double) return;
-        throw new RuntimeError(operator, "Operand must be a number.");
+    @FunctionalInterface
+    interface Operation {
+        Object apply(double left, double right);
     }
 
-    private void checkNumberOperands(Token operator, Object left, Object right) {
-        if (left instanceof Double && right instanceof Double) return;
+    protected Object processNumberOperation(Object left, Token operator, Object right, Operation operation) {
+        if (left instanceof Double l && right instanceof Double r) {
+            return operation.apply(l, r);
+        }
 
-        throw new RuntimeError(operator, "Operand must be numbers.");
+        throw new RuntimeError(operator, "Operands must be numbers.");
     }
 
-    private boolean isTruthy(Object object) {
+    protected boolean isTruthy(Object object) {
         if (object == null) return false;
         if (object instanceof Boolean) return (boolean) object;
         return true;
     }
 
-    private boolean isEqual(Object a, Object b) {
+    protected boolean isEqual(Object a, Object b) {
         if (a == null && b == null) return true;
         if (a == null) return false;
 
@@ -403,7 +384,7 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor {
         return a.equals(b);
     }
 
-    private String stringify(Object object) {
+    protected String stringify(Object object) {
         if (object == null) return "nil";
 
         if (object instanceof Double) {

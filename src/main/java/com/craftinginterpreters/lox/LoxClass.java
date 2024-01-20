@@ -38,7 +38,6 @@ class LoxClass implements LoxCallable {
         LoxInstance instance = new LoxInstance(this);
         LoxFunction initializer = this.findMethod("init");
         if (initializer != null) {
-            // TODO: return value of call is not used here
             initializer.bind(instance).call(interpreter, arguments);
         }
 

@@ -49,7 +49,7 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor {
         this.declare(stmt.name);
         this.define(stmt.name);
 
-        if (stmt.superclass != null && stmt.name.lexeme.equals(stmt.superclass.name.lexeme)) {
+        if (stmt.superclass != null && stmt.name.lexeme().equals(stmt.superclass.name.lexeme())) {
             Lox.error(
                     stmt.superclass.name,
                     "A class can't inherit from itself."
@@ -71,7 +71,7 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor {
 
         for (Stmt.Function method : stmt.methods) {
             FunctionType declaration = FunctionType.METHOD;
-            if (method.name.lexeme.equals("init")) {
+            if (method.name.lexeme().equals("init")) {
                 declaration = FunctionType.INITIALIZER;
             }
 
@@ -240,7 +240,7 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor {
 
     @Override
     public Void visitVariableExpr(Expr.Variable expr) {
-        if (!this.scopes.isEmpty() && this.scopes.peek().get(expr.name.lexeme) == Boolean.FALSE) {
+        if (!this.scopes.isEmpty() && this.scopes.peek().get(expr.name.lexeme()) == Boolean.FALSE) {
             Lox.error(
                     expr.name,
                     "Can't read local variable in its own initializer."
@@ -284,24 +284,24 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor {
         if (this.scopes.isEmpty()) return;
 
         Map<String, Boolean> scope = this.scopes.peek();
-        if (scope.containsKey(name.lexeme)) {
+        if (scope.containsKey(name.lexeme())) {
             Lox.error(
                     name,
                     "Already a variable with this name in this scope."
             );
         }
 
-        scope.put(name.lexeme, false);
+        scope.put(name.lexeme(), false);
     }
 
     private void define(Token name) {
         if (this.scopes.isEmpty()) return;
-        this.scopes.peek().put(name.lexeme, true);
+        this.scopes.peek().put(name.lexeme(), true);
     }
 
     private void resolveLocal(Expr expr, Token name) {
         for (int i = this.scopes.size() - 1; i >= 0; i--) {
-            if (this.scopes.get(i).containsKey(name.lexeme)) {
+            if (this.scopes.get(i).containsKey(name.lexeme())) {
                 this.interpreter.resolve(
                         expr, this.scopes.size() - 1 - i
                 );

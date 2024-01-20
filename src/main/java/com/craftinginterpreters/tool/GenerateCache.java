@@ -24,7 +24,7 @@ public class GenerateCache {
         }
 
         if (outputDir == null) {
-            System.err.println(
+            System.out.println(
                     "Usage generate_cache <-o output directory> [search directory...]"
             );
             System.exit(64);

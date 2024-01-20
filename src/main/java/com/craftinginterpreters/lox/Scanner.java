@@ -84,7 +84,7 @@ class Scanner {
                 if (this.match('/')) {
                     // A comment goes until the end of the line.
                     while (this.peek() != '\n' && !this.isAtEnd())
-                        this.advance();
+                        this.proceed();
                 } else {
                     this.addToken(TokenType.SLASH);
                 }
@@ -107,7 +107,7 @@ class Scanner {
     }
 
     private void identifier() {
-        while (this.isAlphaNumeric(this.peek())) this.advance();
+        while (this.isAlphaNumeric(this.peek())) this.proceed();
 
 /* Reserved Words and Identifiers 4.7
         this.addToken(TokenType.IDENTIFIER);
@@ -119,15 +119,15 @@ class Scanner {
     }
 
     private void number() {
-        while (this.isDigit(this.peek())) this.advance();
+        while (this.isDigit(this.peek())) this.proceed();
 
         // Look for a fractional part.
         if (this.peek() == '.' && this.isDigit(this.peekNext())) {
             // Consume the "."
-            this.advance();
+            this.proceed();
 
 
-            while (this.isDigit(this.peek())) this.advance();
+            while (this.isDigit(this.peek())) this.proceed();
         }
 
         this.addToken(
@@ -141,7 +141,7 @@ class Scanner {
     private void string() {
         while (this.peek() != '"' && !this.isAtEnd()) {
             if (this.peek() == '\n') this.line++;
-            this.advance();
+            this.proceed();
         }
 
         if (this.isAtEnd()) {
@@ -149,8 +149,8 @@ class Scanner {
             return;
         }
 
-        // The closing ".
-        this.advance();
+        // The closing quote.
+        this.proceed();
 
         // Trim the surrounding quotes.
         String value = this.source.substring(this.start + 1, this.current - 1);
@@ -193,7 +193,10 @@ class Scanner {
         return this.current >= this.source.length();
     }
 
-    // TODO: return value of advance is not used in multiple places
+    private void proceed() {
+        this.current++;
+    }
+
     private char advance() {
         return this.source.charAt(this.current++);
     }

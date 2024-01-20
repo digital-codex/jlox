@@ -31,8 +31,7 @@ public class Lox {
     private static void runFile(String path) throws IOException {
         Path file = Paths.get(path);
         if (Files.exists(file)) {
-            byte[] bytes = Files.readAllBytes(file);
-            Lox.run(new String(bytes, Charset.defaultCharset()));
+            Lox.runFile(file);
         } else {
             String name = path.split("\\.")[0].trim().toUpperCase();
             if (Character.isDigit(name.charAt(0))) {
@@ -83,22 +82,21 @@ public class Lox {
                     }
                 }
 
-                byte[] bytes = Files.readAllBytes(
-                        Paths.get(ScriptType.lookup(potential.get(index - 1)))
-                );
-                Lox.run(new String(bytes, Charset.defaultCharset()));
+                Lox.runFile(ScriptType.lookup(potential.get(index - 1)));
             } else if (potential.size() == 1) {
-                byte[] bytes = Files.readAllBytes(
-                        Paths.get(ScriptType.lookup(potential.get(0)))
-                );
-                Lox.run(new String(bytes, Charset.defaultCharset()));
+                Lox.runFile(ScriptType.lookup(potential.get(0)));
             } else {
-                System.err.println(
+                System.out.println(
                         path + " is not a valid script or a cached script name."
                 );
                 System.exit(65);
             }
         }
+    }
+
+    private static void runFile(Path path) throws IOException {
+        byte[] bytes = Files.readAllBytes(path);
+        Lox.run(new String(bytes, Charset.defaultCharset()));
 
         // Indicate an error in the exit code.
         if (Lox.hadError) System.exit(65);
@@ -147,25 +145,25 @@ public class Lox {
     }
 
     private static void report(int line, String where, String message) {
-        System.err.println(
+        System.out.println(
                 "[line " + line + "] Error" + where + ": " + message
         );
         Lox.hadError = true;
     }
 
     static void error(Token token, String message) {
-        if (token.type == TokenType.EOF) {
-            Lox.report(token.line, " at end", message);
+        if (token.type() == TokenType.EOF) {
+            Lox.report(token.line(), " at end", message);
         } else {
             Lox.report(
-                    token.line, " at '" + token.lexeme + "'", message
+                    token.line(), " at '" + token.lexeme() + "'", message
             );
         }
     }
 
     static void runtimeError(RuntimeError error) {
-        System.err.println(
-                error.getMessage() + "\n[line " + error.token.line + "]"
+        System.out.println(
+                error.getMessage() + "\n[line " + error.token.line() + "]"
         );
         Lox.hadRuntimeError = true;
     }
