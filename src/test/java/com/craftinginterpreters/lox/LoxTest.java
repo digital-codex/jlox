@@ -570,6 +570,137 @@ class LoxTest {
         }
     }
 
+    @Nested
+    @DisplayName("Constructor Tests")
+    class Constructor {
+        @Test
+        @DisplayName("Test Arguments")
+        void test_arguments() {
+            final String input = """
+                    class Foo {
+                        init(a, b) {
+                            print "init";
+                            this.a = a;
+                            this.b = b;
+                        }
+                    }
+                    
+                    var foo = Foo(1, 2);
+                    print foo.a;
+                    print foo.b;""";
+
+            LoxTest.run(input, new TestInterpreter(List.of("init", "1", "2")));
+        }
+
+        @Test
+        @DisplayName("Test Call Init Early Return")
+        void test_call_init_early_return() {
+            final String input = """
+                    class Foo {
+                        init() {
+                            print "init";
+                            return;
+                            print "nope";
+                        }
+                    }
+                    
+                    var foo = Foo();
+                    print foo.init();""";
+
+            LoxTest.run(input, new TestInterpreter(List.of("init", "init", "Foo instance")));
+        }
+
+        @Test
+        @DisplayName("Test Call Init Explicitly")
+        void test_call_init_explicitly() {
+            final String input = """
+                    class Foo {
+                        init(arg) {
+                            print "Foo.init(" + arg + ")";
+                            this.field = "init";
+                        }
+                    }
+                    
+                    var foo = Foo("one");
+                    foo.field = "field";
+                    
+                    var foo2 = foo.init("two");
+                    print foo2;
+                    
+                    print foo.field;""";
+
+            LoxTest.run(input, new TestInterpreter(List.of("Foo.init(one)", "Foo.init(two)", "Foo instance", "init")));
+        }
+
+        @Test
+        @DisplayName("Test Default")
+        void test_default() {
+            final String input = """
+                    class Foo {}
+                    
+                    var foo = Foo();
+                    print foo;""";
+
+            LoxTest.run(input, new TestInterpreter(List.of("Foo instance")));
+        }
+
+        @Test
+        @DisplayName("Test Early Return")
+        void test_early_return() {
+            final String input = """
+                    class Foo {
+                        init() {
+                            print "init";
+                            return;
+                            print "nope";
+                        }
+                    }
+                    
+                    var foo = Foo();
+                    print foo;""";
+
+            LoxTest.run(input, new TestInterpreter(List.of("init", "Foo instance")));
+        }
+
+        @Test
+        @DisplayName("Test Init Not Method")
+        void test_init_not_method() {
+            final String input = """
+                    class Foo {
+                        init(arg) {
+                            print "Foo.init(" + arg + ")";
+                            this.field = "init";
+                        }
+                    }
+                    
+                    fun init() {
+                        print "not initializer";
+                    }
+                    
+                    init();""";
+
+            LoxTest.run(input, new TestInterpreter(List.of("not initializer")));
+        }
+
+        @Test
+        @DisplayName("Test Return In Nested Function")
+        void test_return_in_nested_function() {
+            final String input = """
+                    class Foo {
+                        init() {
+                            fun init() {
+                                return "bar";
+                            }
+                            print init();
+                        }
+                    }
+                    
+                    print Foo();""";
+
+            LoxTest.run(input, new TestInterpreter(List.of("bar", "Foo instance")));
+        }
+    }
+
     @Test
     @DisplayName("Test Precedence")
     void test_precedence() {

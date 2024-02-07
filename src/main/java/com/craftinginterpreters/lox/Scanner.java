@@ -109,9 +109,6 @@ class Scanner {
     private void identifier() {
         while (this.isAlphaNumeric(this.peek())) this.proceed();
 
-/* Reserved Words and Identifiers 4.7
-        this.addToken(TokenType.IDENTIFIER);
-*/
         String text = this.source.substring(this.start, this.current);
         TokenType type = keywords.get(text);
         if (type == null) type = TokenType.IDENTIFIER;

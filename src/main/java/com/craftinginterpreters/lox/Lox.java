@@ -120,17 +120,11 @@ public class Lox {
         Scanner scanner = new Scanner(source);
         List<Token> tokens = scanner.scanTokens();
         Parser parser = new Parser(tokens);
-/* Statements 8.1
-        Expr expression = parser.parse();
-*/
         List<Stmt> statements = parser.parse();
 
         // Stop if there was a syntax error.
         if (Lox.hadError) return;
 
-/* Statements 8.1
-        Lox.interpreter.interpret(expression);
-*/
         Resolver resolver = new Resolver(interpreter);
         resolver.resolve(statements);
 
