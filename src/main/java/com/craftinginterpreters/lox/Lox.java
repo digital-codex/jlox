@@ -22,75 +22,9 @@ public class Lox {
             System.out.println("Usage: jlox [script]");
             System.exit(64);
         } else if (args.length == 1) {
-            Lox.runFile(args[0]);
+            Lox.runFile(Paths.get(args[0]));
         } else {
             Lox.runPrompt();
-        }
-    }
-
-    private static void runFile(String path) throws IOException {
-        Path file = Paths.get(path);
-        if (Files.exists(file)) {
-            Lox.runFile(file);
-        } else {
-            String name = path.split("\\.")[0].trim().toUpperCase();
-            if (Character.isDigit(name.charAt(0))) {
-                name = "$" + name;
-            }
-            List<ScriptType> potential = new ArrayList<>();
-            for (ScriptType type : ScriptType.values()) {
-                String[] split = type.name().split("_");
-                String join = Arrays.stream(split)
-                        .filter(x -> !x.equals(split[split.length - 1]))
-                        .collect(Collectors.joining("_"));
-                if (name.compareToIgnoreCase(join) == 0) {
-                    potential.add(type);
-                }
-            }
-
-            if (potential.size() > 1) {
-                System.out.println(
-                        "You have multiple files matching: " + path
-                );
-                System.out.println(
-                        "please chose the file you would like ot execute"
-                );
-                for (ScriptType type : potential) {
-                    String[] indexes = type.name().split("_");
-                    System.out.println(
-                            indexes[indexes.length - 1] + " : "
-                                    + ScriptType.lookup(type)
-                    );
-                }
-                InputStreamReader input = new InputStreamReader(System.in);
-                BufferedReader reader = new BufferedReader(input);
-
-                int index;
-                for (;;) {
-                    String in = reader.readLine();
-                    index = Integer.parseInt(in);
-                    if (index > 0 && index <= potential.size())
-                        break;
-
-                    System.out.println(in + " is not a valid index");
-                    for (ScriptType type : potential) {
-                        String[] indexes = type.name().split("_");
-                        System.out.println(
-                                indexes[indexes.length - 1] + " : "
-                                        + ScriptType.lookup(type)
-                        );
-                    }
-                }
-
-                Lox.runFile(ScriptType.lookup(potential.get(index - 1)));
-            } else if (potential.size() == 1) {
-                Lox.runFile(ScriptType.lookup(potential.get(0)));
-            } else {
-                System.out.println(
-                        path + " is not a valid script or a cached script name."
-                );
-                System.exit(65);
-            }
         }
     }
 
