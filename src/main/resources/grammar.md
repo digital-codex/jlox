@@ -95,7 +95,7 @@ arguments   -> expression ( "," expression )* ;
 
 ## Lexical Grammar § 1.2
 
-The lexical grammar is used by the scanner to group characters into tokens. \
+The lexical grammar is used by the lexer to group characters into tokens. \
 Where the syntax is [context free](https://en.wikipedia.org/wiki/Context-free_grammar), the lexical grammar is [regular](https://en.wikipedia.org/wiki/Regular_grammar) - note that \
 there are no recursive rules.
 

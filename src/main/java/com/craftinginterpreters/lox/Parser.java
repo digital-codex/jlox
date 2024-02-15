@@ -58,28 +58,28 @@ class Parser {
 
     private Stmt classDeclaration() {
         Token name = this.consume(
-                TokenType.IDENTIFIER, "Expect class name."
+                TokenType.IDENT, "Expect class name."
         );
 
         Expr.Variable superclass = null;
         if (this.match(TokenType.LESS)) {
             this.verify(
-                    TokenType.IDENTIFIER, "Expect superclass name."
+                    TokenType.IDENT, "Expect superclass name."
             );
             superclass = new Expr.Variable(this.previous());
         }
 
         this.verify(
-                TokenType.LEFT_BRACE, "Expect '{' before class body."
+                TokenType.LBRACE, "Expect '{' before class body."
         );
 
         List<Stmt.Function> methods = new ArrayList<>();
-        while (!this.check(TokenType.RIGHT_BRACE) && !this.isAtEnd()) {
+        while (!this.check(TokenType.RBRACE) && !this.isAtEnd()) {
             methods.add(this.function("method"));
         }
 
         this.verify(
-                TokenType.RIGHT_BRACE, "Expect '}' after class body."
+                TokenType.RBRACE, "Expect '}' after class body."
         );
 
         return new Stmt.Class(name, superclass, methods);
@@ -91,17 +91,17 @@ class Parser {
         if (this.match(TokenType.PRINT)) return this.printStatement();
         if (this.match(TokenType.RETURN)) return this.returnStatement();
         if (this.match(TokenType.WHILE)) return this.whileStatement();
-        if (this.match(TokenType.LEFT_BRACE))
+        if (this.match(TokenType.LBRACE))
             return new Stmt.Block(this.block());
 
         return this.expressionStatement();
     }
 
     private Stmt forStatement() {
-        this.verify(TokenType.LEFT_PAREN, "Expect '(' after 'for'.");
+        this.verify(TokenType.LPAREN, "Expect '(' after 'for'.");
 
         Stmt initializer;
-        if (this.match(TokenType.SEMICOLON)) {
+        if (this.match(TokenType.SEMI)) {
             initializer = null;
         } else if (this.match(TokenType.VAR)) {
             initializer = this.varDeclaration();
@@ -110,19 +110,19 @@ class Parser {
         }
 
         Expr condition = null;
-        if (!this.check(TokenType.SEMICOLON)) {
+        if (!this.check(TokenType.SEMI)) {
             condition = this.expression();
         }
         this.verify(
-                TokenType.SEMICOLON, "Expect ';' after loop condition."
+                TokenType.SEMI, "Expect ';' after loop condition."
         );
 
         Expr increment = null;
-        if (!this.check(TokenType.RIGHT_PAREN)) {
+        if (!this.check(TokenType.RPAREN)) {
             increment = this.expression();
         }
         this.verify(
-                TokenType.RIGHT_PAREN, "Expect ')' after for clauses."
+                TokenType.RPAREN, "Expect ')' after for clauses."
         );
         Stmt body = this.statement();
 
@@ -143,9 +143,9 @@ class Parser {
     }
 
     private Stmt ifStatement() {
-        this.verify(TokenType.LEFT_PAREN, "Expect '(' after 'if'.");
+        this.verify(TokenType.LPAREN, "Expect '(' after 'if'.");
         Expr condition = this.expression();
-        this.verify(TokenType.RIGHT_PAREN, "Expect ')' after if condition.");
+        this.verify(TokenType.RPAREN, "Expect ')' after if condition.");
 
         Stmt thenBranch = this.statement();
         Stmt elseBranch = null;
@@ -158,26 +158,26 @@ class Parser {
 
     private Stmt printStatement() {
         Expr value = this.expression();
-        this.verify(TokenType.SEMICOLON, "Expect ';' after value.");
+        this.verify(TokenType.SEMI, "Expect ';' after value.");
         return new Stmt.Print(value);
     }
 
     private Stmt returnStatement() {
         Token keyword = this.previous();
         Expr value = null;
-        if (!this.check(TokenType.SEMICOLON)) {
+        if (!this.check(TokenType.SEMI)) {
             value = this.expression();
         }
 
         this.verify(
-                TokenType.SEMICOLON, "Expect ';' after return value."
+                TokenType.SEMI, "Expect ';' after return value."
         );
         return new Stmt.Return(keyword, value);
     }
 
     private Stmt varDeclaration() {
         Token name = this.consume(
-                TokenType.IDENTIFIER, "Expect variable name."
+                TokenType.IDENT, "Expect variable name."
         );
 
         Expr initializer = null;
@@ -186,7 +186,7 @@ class Parser {
         }
 
         this.verify(
-                TokenType.SEMICOLON,
+                TokenType.SEMI,
                 "Expect ';' after variable declaration."
         );
         return new Stmt.Var(name, initializer);
@@ -194,11 +194,11 @@ class Parser {
 
     private Stmt whileStatement() {
         this.verify(
-                TokenType.LEFT_PAREN, "Expect '(' after 'while'."
+                TokenType.LPAREN, "Expect '(' after 'while'."
         );
         Expr condition = this.expression();
         this.verify(
-                TokenType.RIGHT_PAREN, "Expect ')' after condition."
+                TokenType.RPAREN, "Expect ')' after condition."
         );
         Stmt body = this.statement();
 
@@ -208,21 +208,21 @@ class Parser {
     private Stmt expressionStatement() {
         Expr expr = this.expression();
         this.verify(
-                TokenType.SEMICOLON, "Expect ';' after expression."
+                TokenType.SEMI, "Expect ';' after expression."
         );
         return new Stmt.Expression(expr);
     }
 
     private Stmt.Function function(String kind) {
         Token name = this.consume(
-                TokenType.IDENTIFIER, "Expect " + kind + " name."
+                TokenType.IDENT, "Expect " + kind + " name."
         );
         this.verify(
-                TokenType.LEFT_PAREN, "Expect '(' after " + kind
+                TokenType.LPAREN, "Expect '(' after " + kind
                         + " name."
         );
         List<Token> parameters = new ArrayList<>();
-        if (!this.check(TokenType.RIGHT_PAREN)) {
+        if (!this.check(TokenType.RPAREN)) {
             do {
                 if (parameters.size() >= 255) {
                     this.error(
@@ -233,18 +233,18 @@ class Parser {
 
                 parameters.add(
                         this.consume(
-                                TokenType.IDENTIFIER,
+                                TokenType.IDENT,
                                 "Expect parameter name."
                         )
                 );
             } while (this.match(TokenType.COMMA));
         }
         this.verify(
-                TokenType.RIGHT_PAREN, "Expect ')' after parameters."
+                TokenType.RPAREN, "Expect ')' after parameters."
         );
 
         this.verify(
-                TokenType.LEFT_BRACE, "Expect '{' before " + kind
+                TokenType.LBRACE, "Expect '{' before " + kind
                         + " body."
         );
         List<Stmt> body = this.block();
@@ -254,11 +254,11 @@ class Parser {
     private List<Stmt> block() {
         List<Stmt> statements = new ArrayList<>();
 
-        while (!this.check(TokenType.RIGHT_BRACE) && !this.isAtEnd()) {
+        while (!this.check(TokenType.RBRACE) && !this.isAtEnd()) {
             statements.add(this.declaration());
         }
 
-        this.verify(TokenType.RIGHT_BRACE, "Expect '}' after block.");
+        this.verify(TokenType.RBRACE, "Expect '}' after block.");
         return statements;
     }
 
@@ -302,7 +302,7 @@ class Parser {
     private Expr comparison() {
         return this.infix(
                 this::term, Expr.Binary::new,
-                TokenType.GREATER, TokenType.GREATER_EQUAL,
+                TokenType.MORE, TokenType.MORE_EQUAL,
                 TokenType.LESS, TokenType.LESS_EQUAL
         );
     }
@@ -357,7 +357,7 @@ class Parser {
 
     private Expr finishCall(Expr callee) {
         List<Expr> arguments = new ArrayList<>();
-        if (!this.check(TokenType.RIGHT_PAREN)) {
+        if (!this.check(TokenType.RPAREN)) {
             do {
                 if (arguments.size() >= 255) {
                     this.error(
@@ -370,7 +370,7 @@ class Parser {
         }
 
         Token paren = this.consume(
-                TokenType.RIGHT_PAREN, "Expect ')' after arguments."
+                TokenType.RPAREN, "Expect ')' after arguments."
         );
 
         return new Expr.Call(callee, paren, arguments);
@@ -380,11 +380,11 @@ class Parser {
         Expr expr = this.primary();
 
         while (true) {
-            if (this.match(TokenType.LEFT_PAREN)) {
+            if (this.match(TokenType.LPAREN)) {
                 expr = this.finishCall(expr);
             } else if (this.match(TokenType.DOT)) {
                 Token name = this.consume(
-                        TokenType.IDENTIFIER,
+                        TokenType.IDENT,
                         "Expect property name after '.'."
                 );
                 expr = new Expr.Get(expr, name);
@@ -409,7 +409,7 @@ class Parser {
             Token keyword = this.previous();
             this.verify(TokenType.DOT, "Expect '.' after 'super'.");
             Token method = this.consume(
-                    TokenType.IDENTIFIER,
+                    TokenType.IDENT,
                     "Expect superclass method name."
             );
             return new Expr.Super(keyword, method);
@@ -417,14 +417,14 @@ class Parser {
 
         if (this.match(TokenType.THIS)) return new Expr.This(this.previous());
 
-        if (this.match(TokenType.IDENTIFIER)) {
+        if (this.match(TokenType.IDENT)) {
             return new Expr.Variable(this.previous());
         }
 
-        if (match(TokenType.LEFT_PAREN)) {
+        if (match(TokenType.LPAREN)) {
             Expr expr = this.expression();
             this.verify(
-                    TokenType.RIGHT_PAREN,
+                    TokenType.RPAREN,
                     "Expect ')' after expression."
             );
             return new Expr.Grouping(expr);
@@ -497,7 +497,7 @@ class Parser {
         this.proceed();
 
         while (!this.isAtEnd()) {
-            if (this.previous().type() == TokenType.SEMICOLON) return;
+            if (this.previous().type() == TokenType.SEMI) return;
 
             switch (this.peek().type()) {
                 case CLASS, FUN, VAR, FOR, IF, WHILE, PRINT, RETURN -> {

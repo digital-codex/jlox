@@ -194,8 +194,8 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor {
         return switch (expr.operator.type()) {
             case BANG_EQUAL -> !this.isEqual(left, right);
             case EQUAL_EQUAL -> this.isEqual(left, right);
-            case GREATER -> this.processNumberOperation(left, expr.operator, right, (l, r) -> l > r);
-            case GREATER_EQUAL -> this.processNumberOperation(left, expr.operator, right, (l, r) -> l >= r);
+            case MORE -> this.processNumberOperation(left, expr.operator, right, (l, r) -> l > r);
+            case MORE_EQUAL -> this.processNumberOperation(left, expr.operator, right, (l, r) -> l >= r);
             case LESS -> this.processNumberOperation(left, expr.operator, right, (l, r) -> l < r);
             case LESS_EQUAL -> this.processNumberOperation(left, expr.operator, right, (l, r) -> l <= r);
             case MINUS -> this.processNumberOperation(left, expr.operator, right, (l, r) -> l - r);

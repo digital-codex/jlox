@@ -5,7 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-class Scanner {
+class Lexer {
     private static final Map<String, TokenType> keywords;
 
     static {
@@ -34,7 +34,7 @@ class Scanner {
     private int current = 0;
     private int line = 1;
 
-    Scanner(String source) {
+    Lexer(String source) {
         this.source = source;
     }
 
@@ -54,15 +54,15 @@ class Scanner {
     private void scanToken() {
         char c = this.advance();
         switch (c) {
-            case '(' -> this.addToken(TokenType.LEFT_PAREN);
-            case ')' -> this.addToken(TokenType.RIGHT_PAREN);
-            case '{' -> this.addToken(TokenType.LEFT_BRACE);
-            case '}' -> this.addToken(TokenType.RIGHT_BRACE);
+            case '(' -> this.addToken(TokenType.LPAREN);
+            case ')' -> this.addToken(TokenType.RPAREN);
+            case '{' -> this.addToken(TokenType.LBRACE);
+            case '}' -> this.addToken(TokenType.RBRACE);
             case ',' -> this.addToken(TokenType.COMMA);
             case '.' -> this.addToken(TokenType.DOT);
             case '-' -> this.addToken(TokenType.MINUS);
             case '+' -> this.addToken(TokenType.PLUS);
-            case ';' -> this.addToken(TokenType.SEMICOLON);
+            case ';' -> this.addToken(TokenType.SEMI);
             case '*' -> this.addToken(TokenType.STAR);
             case '!' -> this.addToken(
                     this.match('=') ? TokenType.BANG_EQUAL
@@ -77,8 +77,8 @@ class Scanner {
                             : TokenType.LESS
             );
             case '>' -> this.addToken(
-                    this.match('=') ? TokenType.GREATER_EQUAL
-                            : TokenType.GREATER
+                    this.match('=') ? TokenType.MORE_EQUAL
+                            : TokenType.MORE
             );
             case '/' -> {
                 if (this.match('/')) {
@@ -111,7 +111,7 @@ class Scanner {
 
         String text = this.source.substring(this.start, this.current);
         TokenType type = keywords.get(text);
-        if (type == null) type = TokenType.IDENTIFIER;
+        if (type == null) type = TokenType.IDENT;
         this.addToken(type);
     }
 
