@@ -5,7 +5,7 @@ nested syntax tree structure. It starts with the first rule that matches an enti
 Lox program (or a single REPL entry).
 
 ````
-program     -> declaraction* EOF ;
+program     -> declaraction* <EOF> ;
 ````
 
 ### Declarations § 1.1.1
@@ -19,9 +19,9 @@ declaration -> classDecl
              | varDecl
              | statement ;
 
-classDecl   -> "class IDENTIFIER ( "<" IDENTIFIER )? "{" function* "}" ;
+classDecl   -> "class <IDENTIFIER> ( "<" <IDENTIFIER> )? "{" function* "}" ;
 funDecl     -> "fun" function ;
-varDecl     -> "var" IDENTIFIER ( "=" expression )? ";" ;
+varDecl     -> "var" <IDENTIFIER> ( "=" expression )? ";" ;
 ````
 
 ### Statements § 1.1.2
@@ -64,7 +64,7 @@ assignment  -> ( call "." )? IDENTIFIER "=" assignment | logic_or ;
 
 logic_or    -> logic_and ( "or" logic_and )* ;
 logic_and   -> equality ( "and" equality )* ;
-equality    -> comparison ( ( "!=" | "==" ) term* )* ;
+equality    -> comparison ( ( "!=" | "==" ) comparison* )* ;
 comparison  -> term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
 term        -> factor ( ( "-" | "+" ) factor )* ;
 factor      -> unary ( ( "/" | "*" ) unary )* ;
@@ -75,11 +75,11 @@ primary     -> "true"
              | "false" 
              | "nil" 
              | "this" 
-             | NUMBER 
-             | STRING 
-             | IDENTIFIER
+             | <NUMBER> 
+             | <STRING>
+             | <IDENTIFIER>
              | "(" expression ")"
-             | "super" "." IDENTIFIER ;
+             | "super" "." <IDENTIFIER> ;
 ````
 
 ### Utility rules § 1.1.4
@@ -88,8 +88,8 @@ In order to keep the above rules a littler cleaner, some of the grammar is split
 into a few reused helper rules.
 
 ````
-function    -> IDENTIFIER "(" parameters? ")" block ;
-parameters  -> IDENTIFIER ( "," IDENTIFIER )* ;
+function    -> <IDENTIFIER> "(" parameters? ")" block ;
+parameters  -> <IDENTIFIER> ( "," <IDENTIFIER> )* ;
 arguments   -> expression ( "," expression )* ;
 ````
 
@@ -100,9 +100,10 @@ Where the syntax is [context free](https://en.wikipedia.org/wiki/Context-free_gr
 there are no recursive rules.
 
 ````
-NUMBER      -> DIGIT+ ( "." DIGIT+ )? ;
-STRING      -> "\"" [^"]* "\"" ;
-IDENTIFIER  -> ALPHA ( ALPHA | DIGIT )* ;
+NUMBER      -> <DIGIT>+ ( "." <DIGIT>+ )? ;
+STRING      -> "\"" <CHARACTER>* "\"" ;
+IDENTIFIER  -> <ALPHA> ( <ALPHA> | <DIGIT> )* ;
 ALPHA       -> "a" ... "z" | "A" ... "Z" | "_" ;
 DIGIT       -> "0" ... "9" ;
+CHARACTER   -> "\t" | "\n" | " " ... "~"
 ````
