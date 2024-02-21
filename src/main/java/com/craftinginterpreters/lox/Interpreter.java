@@ -269,7 +269,7 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor {
     public Object visitLogicalExpr(Expr.Logical expr) {
         Object left = this.evaluate(expr.left);
 
-        if (expr.operator.type() == TokenType.OR) {
+        if (expr.operator.type() == Token.TokenType.OR) {
             if (this.isTruthy(left)) return left;
         } else {
             if (!this.isTruthy(left)) return left;

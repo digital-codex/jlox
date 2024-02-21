@@ -1,175 +1,225 @@
 package com.craftinginterpreters.lox;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
-class Lexer {
+import static com.craftinginterpreters.lox.Token.TokenType;
+
+public class Lexer {
+    @FunctionalInterface
+    public interface ErrorHandler {
+        void handle(String msg);
+    }
+
+    private enum ErrorType {
+        UNEXPECTED_CHARACTER("unexpected character"),
+        UNTERMINATED_STRING("unterminated string");
+
+        private final String value;
+
+        ErrorType(String value) {
+            this.value = value;
+        }
+
+        public String value() {
+            return this.value;
+        }
+    }
+
     private static final Map<String, TokenType> keywords;
 
     static {
         keywords = new HashMap<>();
+        keywords.put("fn", TokenType.FN);
+        keywords.put("if", TokenType.IF);
+        keywords.put("var", TokenType.VAR);
+        keywords.put("else", TokenType.ELSE);
+        keywords.put("true", TokenType.TRUE);
+        keywords.put("false", TokenType.FALSE);
+        keywords.put("return", TokenType.RETURN);
+
         keywords.put("and", TokenType.AND);
         keywords.put("class", TokenType.CLASS);
-        keywords.put("else", TokenType.ELSE);
-        keywords.put("false", TokenType.FALSE);
         keywords.put("for", TokenType.FOR);
-        keywords.put("fun", TokenType.FUN);
-        keywords.put("if", TokenType.IF);
         keywords.put("nil", TokenType.NIL);
         keywords.put("or", TokenType.OR);
         keywords.put("print", TokenType.PRINT);
-        keywords.put("return", TokenType.RETURN);
         keywords.put("super", TokenType.SUPER);
         keywords.put("this", TokenType.THIS);
-        keywords.put("true", TokenType.TRUE);
-        keywords.put("var", TokenType.VAR);
         keywords.put("while", TokenType.WHILE);
     }
 
     private final String source;
-    private final List<Token> tokens = new ArrayList<>();
+
     private int start = 0;
     private int current = 0;
+
     private int line = 1;
+    private int lineIdx = 0;
 
-    Lexer(String source) {
+    private final ErrorHandler handler;
+    private int errorCnt = 0;
+
+    public Lexer(String source, ErrorHandler handler) {
         this.source = source;
+        this.handler = handler;
     }
 
-    List<Token> scanTokens() {
-        while (!this.isAtEnd()) {
-            // We are at the beginning of the next lexeme.
+    public Token next() {
+        while (this.current < this.source.length()) {
             this.start = this.current;
-            this.scanToken();
-        }
 
-        this.tokens.add(
-                new Token(TokenType.EOF, "", null, this.line)
-        );
-        return this.tokens;
-    }
-
-    private void scanToken() {
-        char c = this.advance();
-        switch (c) {
-            case '(' -> this.addToken(TokenType.LPAREN);
-            case ')' -> this.addToken(TokenType.RPAREN);
-            case '{' -> this.addToken(TokenType.LBRACE);
-            case '}' -> this.addToken(TokenType.RBRACE);
-            case ',' -> this.addToken(TokenType.COMMA);
-            case '.' -> this.addToken(TokenType.DOT);
-            case '-' -> this.addToken(TokenType.MINUS);
-            case '+' -> this.addToken(TokenType.PLUS);
-            case ';' -> this.addToken(TokenType.SEMI);
-            case '*' -> this.addToken(TokenType.STAR);
-            case '!' -> this.addToken(
-                    this.match('=') ? TokenType.BANG_EQUAL
-                            : TokenType.BANG
-            );
-            case '=' -> this.addToken(
-                    this.match('=') ? TokenType.EQUAL_EQUAL
-                            : TokenType.EQUAL
-            );
-            case '<' -> this.addToken(
-                    this.match('=') ? TokenType.LESS_EQUAL
-                            : TokenType.LESS
-            );
-            case '>' -> this.addToken(
-                    this.match('=') ? TokenType.MORE_EQUAL
-                            : TokenType.MORE
-            );
-            case '/' -> {
-                if (this.match('/')) {
-                    // A comment goes until the end of the line.
-                    while (this.peek() != '\n' && !this.isAtEnd())
-                        this.proceed();
-                } else {
-                    this.addToken(TokenType.SLASH);
+            char c = this.peek(0);
+            switch (c) {
+                case '=' -> {
+                    return this.emit(
+                            this.match('=') ? TokenType.EQUAL_EQUAL
+                                    : TokenType.EQUAL
+                    );
+                }
+                case '!' -> {
+                    return this.emit(
+                            this.match('=') ? TokenType.BANG_EQUAL
+                                    : TokenType.BANG
+                    );
+                }
+                case '<' -> {
+                    return this.emit(
+                            this.match('=') ? TokenType.LESS_EQUAL
+                                    : TokenType.LESS
+                    );
+                }
+                case '>' -> {
+                    return this.emit(
+                            this.match('=') ? TokenType.MORE_EQUAL
+                                    : TokenType.MORE
+                    );
+                }
+                case '+' -> {
+                    return this.emit(TokenType.PLUS);
+                }
+                case '-' -> {
+                    return this.emit(TokenType.MINUS);
+                }
+                case '*' -> {
+                    return this.emit(TokenType.STAR);
+                }
+                case '/' -> {
+                    if (this.match('/')) {
+                        // A comment goes until the end of the line.
+                        for (char ch = this.peek(0); ch != '\n' && ch != 0; ch = this.peek(0)) {
+                            this.advance();
+                        }
+                    } else {
+                        return this.emit(TokenType.SLASH);
+                    }
+                }
+                case ',' -> {
+                    return this.emit(TokenType.COMMA);
+                }
+                case '.' -> {
+                    return this.emit(TokenType.DOT);
+                }
+                case ';' -> {
+                    return this.emit(TokenType.SEMICOLON);
+                }
+                case '(' -> {
+                    return this.emit(TokenType.LPAREN);
+                }
+                case ')' -> {
+                    return this.emit(TokenType.RPAREN);
+                }
+                case '{' -> {
+                    return this.emit(TokenType.LBRACE);
+                }
+                case '}' -> {
+                    return this.emit(TokenType.RBRACE);
+                }
+                case '\t', '\n', '\r', ' ' -> {
+                    for (char ch = this.peek(0); ch == '\t' ||  ch == '\n' || ch == '\r' || ch == ' '; ch = this.peek(0)) {
+                        if (ch == '\n') {
+                            this.lineIdx = this.current; this.line++;
+                        }
+                        this.advance();
+                    }
+                }
+                case '"' -> {
+                    return this.string();
+                }
+                default -> {
+                    if (this.isDigit(c)) {
+                        return this.number();
+                    } else if (this.isAlpha(c)) {
+                        return this.ident();
+                    } else {
+                        Lox.error(line, "Unexpected character.");
+                    }
                 }
             }
-            case ' ', '\r', '\t' -> {
-                // Ignore whitespace.
-            }
-            case '\n' -> this.line++;
-            case '"' -> this.string();
-            default -> {
-                if (this.isDigit(c)) {
-                    this.number();
-                } else if (this.isAlpha(c)) {
-                    this.identifier();
-                } else {
-                    Lox.error(line, "Unexpected character.");
-                }
-            }
         }
+
+        return this.emit(TokenType.EOF, "");
     }
 
-    private void identifier() {
-        while (this.isAlphaNumeric(this.peek())) this.proceed();
+    private Token string() {
+        // The opening quote.
+        this.advance();
+
+        for (char ch = this.peek(0); ch != '"' && ch != '\n' && ch != 0; ch = this.peek(0)) this.advance();
+
+        if (this.peek(0) != '"') {
+            return this.error(ErrorType.UNTERMINATED_STRING);
+        }
+
+        // The closing quote.
+        this.advance();
+
+        // Trim the surrounding quotes.
+        return this.emit(TokenType.STRING, this.source.substring(this.start + 1, this.current - 1));
+    }
+
+    private Token ident() {
+        while (this.isAlphaNumeric(this.peek(0))) this.advance();
 
         String text = this.source.substring(this.start, this.current);
         TokenType type = keywords.get(text);
         if (type == null) type = TokenType.IDENT;
-        this.addToken(type);
+        return this.emit(type, text);
     }
 
-    private void number() {
-        while (this.isDigit(this.peek())) this.proceed();
+    private Token number() {
+        while (this.isDigit(this.peek(0))) this.advance();
 
         // Look for a fractional part.
-        if (this.peek() == '.' && this.isDigit(this.peekNext())) {
+        if (this.peek(0) == '.' && this.isDigit(this.peek(1))) {
             // Consume the "."
-            this.proceed();
+            this.advance();
 
 
-            while (this.isDigit(this.peek())) this.proceed();
+            while (this.isDigit(this.peek(0))) this.advance();
         }
 
-        this.addToken(
-                TokenType.NUMBER,
-                Double.parseDouble(
-                        this.source.substring(this.start, this.current)
-                )
-        );
+        return this.emit(TokenType.NUMBER, this.source.substring(this.start, this.current));
     }
 
-    private void string() {
-        while (this.peek() != '"' && !this.isAtEnd()) {
-            if (this.peek() == '\n') this.line++;
-            this.proceed();
-        }
+    private char peek(int n) {
+        if (this.current + n < this.source.length())
+            return this.source.charAt(this.current + n);
+        else
+            return '\0';
+    }
 
-        if (this.isAtEnd()) {
-            Lox.error(line, "Unterminated string.");
-            return;
-        }
-
-        // The closing quote.
-        this.proceed();
-
-        // Trim the surrounding quotes.
-        String value = this.source.substring(this.start + 1, this.current - 1);
-        this.addToken(TokenType.STRING, value);
+    private void advance() {
+        if (this.current < this.source.length()) this.current++;
     }
 
     private boolean match(char expected) {
-        if (this.isAtEnd()) return false;
-        if (this.source.charAt(this.current) != expected) return false;
+        if (this.peek(1) == expected) {
+            this.advance();
+            return true;
+        }
 
-        this.current++;
-        return true;
-    }
-
-    private char peek() {
-        if (this.isAtEnd()) return '\0';
-        return this.source.charAt(this.current);
-    }
-
-    private char peekNext() {
-        if (this.current + 1 >= this.source.length()) return '\0';
-        return this.source.charAt(this.current + 1);
+        return false;
     }
 
     private boolean isAlpha(char c) {
@@ -178,32 +228,40 @@ class Lexer {
                 c == '_';
     }
 
-    private boolean isAlphaNumeric(char c) {
-        return this.isAlpha(c) || this.isDigit(c);
-    }
-
     private boolean isDigit(char c) {
         return c >= '0' && c <= '9';
     }
 
-    private boolean isAtEnd() {
-        return this.current >= this.source.length();
+    private boolean isAlphaNumeric(char c) {
+        return this.isAlpha(c) || this.isDigit(c);
     }
 
-    private void proceed() {
-        this.current++;
+    private Token emit(TokenType type) {
+        this.advance();
+        return this.emit(type, type.lexeme());
     }
 
-    private char advance() {
-        return this.source.charAt(this.current++);
+    private Token emit(TokenType type, String lexeme) {
+        return new Token(type, this.current, this.current - this.start, this.line, lexeme);
     }
 
-    private void addToken(TokenType type) {
-        this.addToken(type, null);
-    }
+    private Token error(ErrorType type) {
+        if (this.handler != null) {
+            StringBuilder msg = new StringBuilder(String.format("Error: %s\n     ", type.value()));
+            int start = 0;
+            if (this.lineIdx != 0) {
+                start = this.lineIdx + 1;
+            }
+            String line = String.format("%d | %s\n", this.line, this.source.substring(start, this.current));
+            msg.append(line);
+            int off = line.length();
+            msg.append(" ".repeat(off+2));
+            msg.append("^--- Here");
 
-    private void addToken(TokenType type, Object literal) {
-        String text = this.source.substring(this.start, this.current);
-        this.tokens.add(new Token(type, text, literal, line));
+            this.handler.handle(msg.toString());
+        }
+        this.errorCnt++;
+
+        return this.emit(TokenType.ILLEGAL, type.value());
     }
 }

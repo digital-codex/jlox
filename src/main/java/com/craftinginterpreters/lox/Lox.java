@@ -9,6 +9,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 
+import static com.craftinginterpreters.lox.Token.TokenType;
 public class Lox {
     private static final Interpreter interpreter = new Interpreter();
     static boolean hadError = false;
@@ -48,9 +49,7 @@ public class Lox {
     }
 
     private static void run(String source) {
-        Lexer lexer = new Lexer(source);
-        List<Token> tokens = lexer.scanTokens();
-        Parser parser = new Parser(tokens);
+        Parser parser = new Parser(source);
         List<Stmt> statements = parser.parse();
 
         // Stop if there was a syntax error.

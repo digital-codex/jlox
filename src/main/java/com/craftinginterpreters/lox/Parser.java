@@ -4,14 +4,20 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import static com.craftinginterpreters.lox.Token.TokenType;
 class Parser {
     private static class ParseError extends RuntimeException {}
 
-    private final List<Token> tokens;
-    private int current = 0;
+    private final Lexer lexer;
+    private Token current;
+    private Token peek;
 
-    Parser(List<Token> tokens) {
-        this.tokens = tokens;
+    private List<String> errors;
+
+    Parser(String source) {
+        this.lexer = new Lexer(source, (String msg) -> this.errors.add(msg));
+        this.current = this.lexer.next();
+        this.peek = this.lexer.next();
     }
 
 /* Statements 8.1
@@ -101,7 +107,7 @@ class Parser {
         this.verify(TokenType.LPAREN, "Expect '(' after 'for'.");
 
         Stmt initializer;
-        if (this.match(TokenType.SEMI)) {
+        if (this.match(TokenType.SEMICOLON)) {
             initializer = null;
         } else if (this.match(TokenType.VAR)) {
             initializer = this.varDeclaration();
@@ -110,11 +116,11 @@ class Parser {
         }
 
         Expr condition = null;
-        if (!this.check(TokenType.SEMI)) {
+        if (!this.check(TokenType.SEMICOLON)) {
             condition = this.expression();
         }
         this.verify(
-                TokenType.SEMI, "Expect ';' after loop condition."
+                TokenType.SEMICOLON, "Expect ';' after loop condition."
         );
 
         Expr increment = null;
@@ -158,19 +164,19 @@ class Parser {
 
     private Stmt printStatement() {
         Expr value = this.expression();
-        this.verify(TokenType.SEMI, "Expect ';' after value.");
+        this.verify(TokenType.SEMICOLON, "Expect ';' after value.");
         return new Stmt.Print(value);
     }
 
     private Stmt returnStatement() {
         Token keyword = this.previous();
         Expr value = null;
-        if (!this.check(TokenType.SEMI)) {
+        if (!this.check(TokenType.SEMICOLON)) {
             value = this.expression();
         }
 
         this.verify(
-                TokenType.SEMI, "Expect ';' after return value."
+                TokenType.SEMICOLON, "Expect ';' after return value."
         );
         return new Stmt.Return(keyword, value);
     }
@@ -186,7 +192,7 @@ class Parser {
         }
 
         this.verify(
-                TokenType.SEMI,
+                TokenType.SEMICOLON,
                 "Expect ';' after variable declaration."
         );
         return new Stmt.Var(name, initializer);
@@ -208,7 +214,7 @@ class Parser {
     private Stmt expressionStatement() {
         Expr expr = this.expression();
         this.verify(
-                TokenType.SEMI, "Expect ';' after expression."
+                TokenType.SEMICOLON, "Expect ';' after expression."
         );
         return new Stmt.Expression(expr);
     }
@@ -402,7 +408,7 @@ class Parser {
         if (this.match(TokenType.NIL)) return new Expr.Literal(null);
 
         if (this.match(TokenType.NUMBER, TokenType.STRING)) {
-            return new Expr.Literal(this.previous().literal());
+            return new Expr.Literal(this.previous().lexeme());
         }
 
         if (this.match(TokenType.SUPER)) {
@@ -464,12 +470,13 @@ class Parser {
     }
 
     private void proceed() {
-        if (!this.isAtEnd()) this.current++;
+        if (!this.isAtEnd());
     }
 
     private Token advance() {
-        if (!this.isAtEnd()) this.current++;
-        return this.previous();
+        if (!this.isAtEnd())
+            return this.previous();
+        return null;
     }
 
     private boolean isAtEnd() {
@@ -477,11 +484,11 @@ class Parser {
     }
 
     private Token peek() {
-        return this.tokens.get(this.current);
+        return null;
     }
 
     private Token previous() {
-        return this.tokens.get(this.current - 1);
+        return null;
     }
 
     private void error(Token token, String message) {
@@ -497,7 +504,7 @@ class Parser {
         this.proceed();
 
         while (!this.isAtEnd()) {
-            if (this.previous().type() == TokenType.SEMI) return;
+            if (this.previous().type() == TokenType.SEMICOLON) return;
 
             switch (this.peek().type()) {
                 case CLASS, FUN, VAR, FOR, IF, WHILE, PRINT, RETURN -> {
