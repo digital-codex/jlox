@@ -168,7 +168,7 @@ public class Lexer {
         for (char ch = this.peek(0); ch != '"' && ch != '\n' && ch != 0; ch = this.peek(0)) this.advance();
 
         if (this.peek(0) != '"') {
-            return this.error(ErrorType.UNTERMINATED_STRING);
+            return this.emit(TokenType.ILLEGAL, this.error(ErrorType.UNTERMINATED_STRING));
         }
 
         // The closing quote.
@@ -245,7 +245,7 @@ public class Lexer {
         return new Token(type, this.current, this.current - this.start, this.line, lexeme);
     }
 
-    private Token error(ErrorType type) {
+    private String error(ErrorType type) {
         if (this.handler != null) {
             StringBuilder msg = new StringBuilder(String.format("Error: %s\n     ", type.value()));
             int start = 0;
@@ -262,6 +262,6 @@ public class Lexer {
         }
         this.errorCnt++;
 
-        return this.emit(TokenType.ILLEGAL, type.value());
+        return type.value();
     }
 }

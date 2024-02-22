@@ -51,7 +51,7 @@ class Parser {
     private Stmt declaration() {
         try {
             if (this.match(TokenType.CLASS)) return this.classDeclaration();
-            if (this.match(TokenType.FUN))
+            if (this.match(TokenType.FN))
                 return this.function("function");
             if (this.match(TokenType.VAR)) return this.varDeclaration();
 
@@ -507,7 +507,7 @@ class Parser {
             if (this.previous().type() == TokenType.SEMICOLON) return;
 
             switch (this.peek().type()) {
-                case CLASS, FUN, VAR, FOR, IF, WHILE, PRINT, RETURN -> {
+                case CLASS, FN, VAR, FOR, IF, WHILE, PRINT, RETURN -> {
                     return;
                 }
             }
