@@ -152,3 +152,5 @@ class LexerTest {
         }
     }
 }
+
+// Note everywhere a design decision was made, abstract into submodule
